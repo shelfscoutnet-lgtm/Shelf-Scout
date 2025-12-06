@@ -1,0 +1,7 @@
+{
+  "name": "Shelf Scout",
+  "description": "Smart grocery price comparison tool. Find the best prices across Jamaica.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
