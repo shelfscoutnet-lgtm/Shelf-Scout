@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
-import { Plus, ChevronDown, ChevronUp, MapPin, Share2, Heart, Check, Store as StoreIcon } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, MapPin, Share2, Heart, Check, Store as StoreIcon, TrendingDown, AlertCircle } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { STORES } from '../constants';
 import { useTheme } from '../context/ThemeContext';
@@ -47,31 +47,42 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
 
   if (storeOptions.length === 0) return null;
 
+  // Calculate Price Spread / Savings
+  const lowestPrice = storeOptions[0].price;
+  const highestPrice = storeOptions[storeOptions.length - 1].price;
+  const priceSpread = highestPrice - lowestPrice;
+  // Robust calculation: (High - Low) / High
+  const savingsPercentage = highestPrice > 0 ? (priceSpread / highestPrice) * 100 : 0;
+  const showSpreadBadge = savingsPercentage > 5; // Threshold 5%
+
   // Determine active view (default to cheapest if none selected)
   const activeOption = selectedStoreId 
     ? storeOptions.find(s => s.id === selectedStoreId) || storeOptions[0]
     : storeOptions[0];
 
-  const isBestPrice = activeOption.price === storeOptions[0].price;
+  const isBestPrice = activeOption.price === lowestPrice;
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}?product=${product.id}`;
-    const text = `Check out ${product.name} at ${activeOption.name} for $${activeOption.price.toLocaleString()} on Shelf Scout!`;
+    const text = `Found ${product.name} for $${activeOption.price.toLocaleString()} at ${activeOption.name}. Check it out on Shelf Scout!`;
+    const shareData = {
+        title: 'Shelf Scout Price Alert',
+        text: text,
+        url: url
+    };
     
-    if (navigator.share) {
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         try {
-            await navigator.share({
-                title: 'Shelf Scout Deal',
-                text: text,
-                url: url
-            });
+            await navigator.share(shareData);
         } catch (err) {
             console.log('Share cancelled');
         }
     } else {
         try {
             await navigator.clipboard.writeText(`${text} ${url}`);
+            // Fallback feedback could be a toast, but using alert for simplicity as per common request unless toast system exists
+            // The previous code used alert, keeping consistent
             alert('Link copied to clipboard!');
         } catch (err) {
             console.error('Failed to copy', err);
@@ -137,15 +148,24 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
             </button>
         </div>
 
-        {/* Best Price Badge - Only if currently viewing the cheapest option */}
-        {isBestPrice && storeOptions.length > 1 && (
-            <div className="absolute top-2 left-2 z-10">
-                <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center">
+        {/* Badges Container */}
+        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
+            {/* Best Price Badge - Only if currently viewing the cheapest option */}
+            {isBestPrice && storeOptions.length > 1 && (
+                <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center animate-in fade-in zoom-in duration-300">
                     <Check size={10} className="mr-1" />
                     BEST PRICE
                 </div>
-            </div>
-        )}
+            )}
+
+            {/* Price Spread Badge - Shows if significant savings are available within the parish */}
+            {showSpreadBadge && (
+                <div className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center animate-in fade-in zoom-in duration-300 delay-75" title={`Prices vary by ${Math.round(savingsPercentage)}% across stores`}>
+                    <TrendingDown size={10} className="mr-1" />
+                    {Math.round(savingsPercentage)}% SPREAD
+                </div>
+            )}
+        </div>
       </div>
       
       {/* Content Area */}
