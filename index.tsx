@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-import './index.css'
+
 
 // SAFETY NET: This catches the crash and shows the error on screen
 try {
