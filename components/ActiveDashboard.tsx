@@ -1,28 +1,79 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronRight, TrendingDown, Users, Moon, Sun, MapPin, ArrowLeft, Camera, Upload, Check, ShoppingBag, Wallet, Award, Heart, Trash2, Bell } from 'lucide-react';
-import { PRODUCTS, PARISHES, MEAL_BUNDLES, STORES } from '../constants';
-import { ProductCard } from './ProductCard';
+import { Search, ChevronRight, TrendingDown, Users, Moon, Sun, MapPin, ArrowLeft, Camera, Upload, Check, ShoppingBag, Wallet, Award, Heart, Trash2, Bell, Loader2, Database, AlertCircle, Store as StoreIcon, Save, Zap, XCircle, LogOut, Mail, Lock, X, Minus, Plus, Utensils } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 import { Navbar } from './Navbar';
 import { CartDrawer } from './CartDrawer';
 import { ChatBot } from './ChatBot';
 import { ProductModal } from './ProductModal';
-import { Product } from '../types';
+import { ProductCard } from './ProductCard';
+import { ChefCorner } from './ChefCorner';
+import { useProducts } from '../hooks/useProducts';
+import { useSignups } from '../hooks/useSignups';
+import { ImportPage } from './ImportPage';
+import { AdminUpload } from './AdminUpload';
+import { VelvetRopeWaitlist } from './VelvetRopeWaitlist';
 
 export const ActiveDashboard: React.FC = () => {
-  const { currentParish, manualOverride, addMultipleToCart, getCartTotal, comparisonStore, primaryStore, priceAlerts } = useShop();
+  const { 
+    currentParish, 
+    resetParish,
+    addMultipleToCart, 
+    getCartTotal, 
+    comparisonStore, 
+    primaryStore, 
+    priceAlerts, 
+    stores,
+    locations,
+    selectedLocation,
+    setSelectedLocation,
+    cart,
+    updateCartItemQuantity,
+    removeFromCart
+  } = useShop();
+
   const { isDarkMode, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('home');
   
-  // Persistent Search Term
+  const signupsData = useSignups();
+  const signupCount = signupsData ? (signupsData.signupCount || 0) : 0;
+  const submitSignup = signupsData ? signupsData.submitSignup : undefined;
+
+  const [activeTab, setActiveTab] = useState('home');
+  const [showImportPage, setShowImportPage] = useState(false);
+  const [showAdminUpload, setShowAdminUpload] = useState(false);
+  
+  const [userEmail, setUserEmail] = useState<string | null>(() => {
+      try { return localStorage.getItem('shelf_scout_user_email'); } catch { return null; }
+  });
+  const [loginInput, setLoginInput] = useState('');
+
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [unlockError, setUnlockError] = useState('');
+  
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const { products, loading: isLoadingProducts, error: productsError } = useProducts(selectedCategory);
+  
   const [searchTerm, setSearchTerm] = useState(() => {
     try {
         return sessionStorage.getItem('shelf_scout_search') || '';
     } catch { return ''; }
   });
 
-  // Update session storage when search changes
+  useEffect(() => {
+    if (window.location.hash === '#admin-upload') {
+        setShowAdminUpload(true);
+    }
+  }, []);
+
   useEffect(() => {
     try {
         sessionStorage.setItem('shelf_scout_search', searchTerm);
@@ -30,35 +81,29 @@ export const ActiveDashboard: React.FC = () => {
   }, [searchTerm]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  
-  // Profile / Catalogue Form State
-  const [itemName, setItemName] = useState('');
-  const [itemPrice, setItemPrice] = useState('');
-  const [itemSubmitted, setItemSubmitted] = useState(false);
-  
-  // Saved Items State
   const [savedProductIds, setSavedProductIds] = useState<string[]>([]);
 
-  // Notifications for Alerts
   const triggeredAlerts = useMemo(() => {
-      if (!currentParish) return [];
+      if (!currentParish || isLoadingProducts || !products) return [];
       const alerts = [];
-      const parishStores = STORES.filter(s => s.parish_id === currentParish.id);
+      const relevantStores = selectedLocation === 'All' 
+        ? stores.filter(s => s.parish_id === currentParish.id)
+        : stores.filter(s => s.location === selectedLocation && s.parish_id === currentParish.id);
       
       for (const alert of priceAlerts) {
-          const product = PRODUCTS.find(p => p.id === alert.productId);
+          const product = products.find(p => p.id === alert.productId);
           if (product) {
-              // Check prices in current parish
-              const lowestPrice = Math.min(...parishStores.map(s => product.prices[s.id] || Infinity));
-              if (lowestPrice <= alert.targetPrice) {
+              const productPrices = relevantStores.map(s => product.prices[s.id]).filter((p): p is number => p !== undefined);
+              const lowestPrice = productPrices.length > 0 ? Math.min(...productPrices) : Infinity;
+              
+              if (lowestPrice <= alert.targetPrice && lowestPrice !== Infinity) {
                   alerts.push({ product, price: lowestPrice, target: alert.targetPrice });
               }
           }
       }
       return alerts;
-  }, [priceAlerts, currentParish]);
+  }, [priceAlerts, currentParish, products, isLoadingProducts, stores, selectedLocation]);
 
-  // Load Saved Items when Profile tab is active
   useEffect(() => {
       if (activeTab === 'profile') {
           try {
@@ -72,18 +117,18 @@ export const ActiveDashboard: React.FC = () => {
       }
   }, [activeTab]);
 
-  const filteredProducts = PRODUCTS.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.tags.some(t => t.includes(searchTerm.toLowerCase()))
-  );
+  const filteredProducts = useMemo(() => {
+    if (!products || !Array.isArray(products)) return [];
+    return products.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        p.tags.some(t => t.includes(searchTerm.toLowerCase()))
+    );
+  }, [products, searchTerm]);
 
-  const savedProducts = PRODUCTS.filter(p => savedProductIds.includes(p.id));
-
-  const handleAddBundle = (productIds: string[]) => {
-    const productsToAdd = PRODUCTS.filter(p => productIds.includes(p.id));
-    addMultipleToCart(productsToAdd);
-    // Visual feedback handled by cart drawer updating
-  };
+  const savedProducts = useMemo(() => {
+      if (!products || !Array.isArray(products)) return [];
+      return products.filter(p => savedProductIds.includes(p.id));
+  }, [products, savedProductIds]);
 
   const removeSavedItem = (id: string) => {
       const newSaved = savedProductIds.filter(pid => pid !== id);
@@ -91,15 +136,117 @@ export const ActiveDashboard: React.FC = () => {
       localStorage.setItem('shelf_scout_saved', JSON.stringify(newSaved));
   };
 
-  // Calculate Personal Stats for Profile
-  const totalSpend = getCartTotal(primaryStore?.id);
-  const comparisonSpend = getCartTotal(comparisonStore?.id);
-  const totalSaved = Math.max(0, comparisonSpend - totalSpend);
+  const handleProductClick = (p: Product) => {
+    setSelectedProduct(p);
+  };
+
+  const scrollToProducts = () => {
+    const element = document.getElementById('product-list');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (loginInput.trim()) {
+          const email = loginInput.trim().toLowerCase();
+          setUserEmail(email);
+          localStorage.setItem('shelf_scout_user_email', email);
+          setLoginInput('');
+      }
+  };
+
+  const handleLogout = () => {
+      setUserEmail(null);
+      localStorage.removeItem('shelf_scout_user_email');
+      setIsAdminUnlocked(false);
+      setAdminPasswordInput('');
+      setUnlockError('');
+  };
+
+  const handleAdminUnlock = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (adminPasswordInput === 'YAWEH04953C57S') {
+          setIsAdminUnlocked(true);
+          setUnlockError('');
+      } else {
+          setUnlockError('Invalid Admin Credentials');
+      }
+  };
+
+  const handleActiveSignup = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentParish || !signupName || !signupEmail) return;
+
+      setIsSigningUp(true);
+      if (submitSignup) {
+        const res = await submitSignup({
+            name: signupName,
+            email: signupEmail,
+            parish_id: currentParish.id
+        });
+        
+        if (res.success) {
+            setShowSignupModal(false);
+            setSignupName('');
+            setSignupEmail('');
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        } else {
+            alert("Couldn't join. Please try again.");
+        }
+      }
+      setIsSigningUp(false);
+  };
+
+  const goalTarget = 300;
+  const rawCount = typeof signupCount === 'number' ? signupCount : 0;
+  const progressPercent = Math.min((rawCount / goalTarget) * 100, 100);
+
+  const { bestTotal, worstTotal, savings } = useMemo(() => {
+    let best = 0;
+    let worst = 0;
+    cart.forEach(item => {
+      const prices = Object.values(item.prices) as number[];
+      if (prices.length > 0) {
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        best += min * item.quantity;
+        worst += max * item.quantity;
+      }
+    });
+    return { bestTotal: best, worstTotal: worst, savings: worst - best };
+  }, [cart]);
+
+  const categories = [
+      { name: 'Pantry', emoji: '🍚' },
+      { name: 'Meat', emoji: '🥩' },
+      { name: 'Produce', emoji: '🥬' },
+      { name: 'Beverages', emoji: '🥤' },
+      { name: 'Canned', emoji: '🥫' },
+      { name: 'Bakery', emoji: '🍞' },
+      { name: 'Dairy', emoji: '🥛' },
+      { name: 'Frozen', emoji: '❄️' },
+      { name: 'Snacks', emoji: '🍪' }
+  ];
+
+  const handleCategoryClick = (categoryName: string) => {
+      setSearchTerm(''); 
+      if (selectedCategory === categoryName) {
+          setSelectedCategory(null); 
+      } else {
+          setSelectedCategory(categoryName);
+      }
+  };
 
   const renderHeader = () => {
     if (activeTab !== 'home') {
        return (
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 pt-4 px-4">
               <button 
                 onClick={() => setActiveTab('home')}
                 className={`flex items-center text-sm font-semibold ${isDarkMode ? 'text-teal-200 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
@@ -117,164 +264,517 @@ export const ActiveDashboard: React.FC = () => {
     }
 
     return (
-        <div className="flex justify-between items-center mb-6">
-            <div className="flex flex-col">
+        <div className="flex flex-col mb-4 pt-4 px-4">
+            <div className="flex justify-between items-center mb-4">
                 <h1 className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                     Shelf<span className="text-emerald-500">Scout</span>
                 </h1>
-                <div className="flex items-center mt-1">
-                        <MapPin size={12} className={`mr-1 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                        <select 
-                        value={currentParish?.id}
-                        onChange={(e) => manualOverride(e.target.value)}
-                        className={`text-xs font-semibold bg-transparent border-none p-0 focus:ring-0 cursor-pointer ${isDarkMode ? 'text-teal-200' : 'text-slate-700'}`}
-                        >
-                        {PARISHES.map(p => (
-                            <option key={p.id} value={p.id} className="text-slate-900">
-                                {p.name}
-                            </option>
-                        ))}
-                        </select>
+                
+                <div className="flex items-center space-x-2">
+                    <button 
+                        onClick={toggleTheme} 
+                        className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-teal-800 text-teal-200' : 'bg-slate-100 text-slate-600'}`}
+                    >
+                        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
                 </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-                {/* Alert Bell */}
-                <div className="relative">
-                    <button className={`p-2 rounded-full ${isDarkMode ? 'bg-teal-800 text-teal-200' : 'bg-slate-100 text-slate-600'}`}>
-                        <Bell size={18} />
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                    <button 
+                        onClick={resetParish}
+                        className={`p-2 mr-3 rounded-full border transition-colors ${isDarkMode ? 'bg-teal-900 border-teal-800 text-teal-200 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'}`}
+                    >
+                        <ArrowLeft size={16} />
                     </button>
-                    {triggeredAlerts.length > 0 && (
-                        <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-                    )}
+                    <div>
+                        <div className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Current Parish</div>
+                        <div className={`font-bold text-lg flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            <MapPin size={16} className="mr-1 text-emerald-500" />
+                            {currentParish?.name}
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <button 
-                    onClick={toggleTheme} 
-                    className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-teal-800 text-teal-200' : 'bg-slate-100 text-slate-600'}`}
-                >
-                    {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
+            <div className={`p-3 rounded-xl border flex items-center ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <StoreIcon size={16} className={`mr-3 ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`} />
+                <div className="flex-1">
+                    <label className={`block text-[10px] font-bold uppercase ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>City / Area</label>
+                    <select 
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        className={`w-full bg-transparent font-bold text-sm focus:outline-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+                    >
+                        <option value="All" className="text-slate-900">All {currentParish?.name}</option>
+                        {locations.map(loc => (
+                            <option key={loc} value={loc} className="text-slate-900">
+                                {loc}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
         </div>
     );
   }
 
+  if (showImportPage) {
+    return <ImportPage onBack={() => setShowImportPage(false)} />;
+  }
+
+  if (showAdminUpload) {
+    return <AdminUpload onBack={() => setShowAdminUpload(false)} />;
+  }
+
   const renderContent = () => {
     if (activeTab === 'home') {
         return (
-            <div className="p-4 space-y-6 pb-24">
+            <div className="pb-24 relative">
                 {renderHeader()}
+                
+                <div className="px-4 mb-6">
+                    <div 
+                        onClick={() => setShowSignupModal(true)}
+                        className={`rounded-xl p-4 border relative overflow-hidden cursor-pointer transition-transform active:scale-[0.98] ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-slate-900 border-slate-800'}`}
+                    >
+                         <div className="flex justify-between items-end mb-2 relative z-10">
+                             <div>
+                                 <h3 className="text-white font-bold text-sm flex items-center">
+                                     <Zap size={14} className="text-yellow-400 mr-1" fill="currentColor" />
+                                     Community Goal
+                                 </h3>
+                                 <p className="text-slate-400 text-xs mt-0.5">Help us reach {goalTarget} local scouts!</p>
+                             </div>
+                             <div className="text-right">
+                                 <div className="text-2xl font-bold text-white leading-none">{rawCount}</div>
+                                 <div className="text-[10px] text-slate-400 uppercase font-bold">Joined</div>
+                             </div>
+                         </div>
+                         
+                         <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden relative z-10">
+                             <div 
+                                className="bg-gradient-to-r from-emerald-500 to-yellow-400 h-full rounded-full transition-all duration-1000" 
+                                style={{ width: `${isNaN(progressPercent) ? 0 : progressPercent}%` }}
+                             ></div>
+                         </div>
+                         
+                         <div className="mt-3 relative z-10">
+                             <div className="flex items-center justify-between">
+                                 <span className="text-[10px] text-emerald-400 font-bold">
+                                     {isNaN(progressPercent) ? '0' : progressPercent.toFixed(0)}% Complete
+                                 </span>
+                                 <span className="text-[10px] text-slate-400 flex items-center">
+                                    Join the movement <ChevronRight size={10} className="ml-1" />
+                                 </span>
+                             </div>
+                         </div>
 
-                {/* Notifications for Alerts */}
-                {triggeredAlerts.length > 0 && (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 animate-pulse">
-                        <h4 className="text-xs font-bold text-emerald-800 flex items-center mb-1">
-                            <Bell size={12} className="mr-1 fill-emerald-800" /> Price Drop Alert!
-                        </h4>
-                        {triggeredAlerts.slice(0, 2).map((alert, idx) => (
-                            <div key={idx} className="text-xs text-emerald-700">
-                                <strong>{alert.product.name}</strong> is now ${alert.price} (Goal: ${alert.target})
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Hero / CTA */}
-                <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden ${isDarkMode ? 'bg-teal-900' : 'bg-slate-900'}`}>
-                    <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="relative z-10">
-                        <h2 className="font-bold text-lg mb-2 text-white">Find Nearby Savings</h2>
-                        <p className="text-slate-300 text-sm mb-4">Compare prices from stores right in {currentParish?.name}.</p>
-                        <button 
-                            onClick={() => { setActiveTab('search'); setSearchTerm(''); }}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                        >
-                            Start Scouting
-                        </button>
+                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl"></div>
                     </div>
                 </div>
 
-                {/* Chef's Corner - Meal Bundles */}
-                <div>
-                    <div className="flex justify-between items-center mb-4">
-                         <h3 className={`font-bold flex items-center ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                            Chef's Corner <span className="ml-2 text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">One-Click Meals</span>
-                         </h3>
-                    </div>
-                    <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-2">
-                        {MEAL_BUNDLES.map(bundle => (
-                            <div key={bundle.id} className={`min-w-[260px] rounded-2xl p-3 border shadow-sm flex flex-col relative ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                                <div className="h-32 rounded-xl overflow-hidden mb-3 relative">
-                                    <img src={bundle.image} alt={bundle.title} className="w-full h-full object-cover" />
-                                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-full font-bold">
-                                        {bundle.productIds.length} items
-                                    </div>
+                <div className="p-4 space-y-6 pt-0">
+                    {triggeredAlerts.length > 0 && (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 animate-pulse">
+                            <h4 className="text-xs font-bold text-emerald-800 flex items-center mb-1">
+                                <Bell size={12} className="mr-1 fill-emerald-800" /> Price Drop Alert!
+                            </h4>
+                            {triggeredAlerts.slice(0, 2).map((alert, idx) => (
+                                <div key={idx} className="text-xs text-emerald-700">
+                                    <strong>{alert.product.name}</strong> is now ${alert.price} (Goal: ${alert.target})
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className={`font-bold text-sm mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{bundle.title}</h4>
-                                    <p className={`text-xs mb-3 line-clamp-2 ${isDarkMode ? 'text-teal-200' : 'text-slate-500'}`}>{bundle.description}</p>
-                                </div>
-                                <div className="flex items-center justify-between mt-2">
-                                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">
-                                        {bundle.savingsLabel}
-                                    </span>
-                                    <button 
-                                        onClick={() => handleAddBundle(bundle.productIds)}
-                                        className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
-                                    >
-                                        <ShoppingBag size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                            ))}
+                        </div>
+                    )}
 
-                {/* Categories */}
-                <div>
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Categories</h3>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                        {[
-                            { name: 'Pantry', emoji: '🥫' },
-                            { name: 'Meat', emoji: '🥩' },
-                            { name: 'Produce', emoji: '🥬' },
-                            { name: 'Drinks', emoji: '🥤' }
-                        ].map(cat => (
+                    <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden ${isDarkMode ? 'bg-teal-950' : 'bg-slate-50 border border-slate-100'}`}>
+                        <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="relative z-10">
+                            <h2 className={`font-bold text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Welcome to {currentParish?.name}</h2>
+                            <p className={`text-sm mb-4 ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Comparing prices across {selectedLocation === 'All' || selectedLocation.startsWith('All') ? `all of ${currentParish?.name}` : selectedLocation}.</p>
                             <button 
-                                key={cat.name}
-                                onClick={() => { setActiveTab('search'); setSearchTerm(cat.name); }}
-                                className={`flex flex-col items-center justify-center p-3 rounded-xl border shadow-sm transition-colors ${isDarkMode ? 'bg-teal-900 border-teal-800 hover:border-emerald-500' : 'bg-white border-slate-100 hover:border-emerald-200'}`}
+                                onClick={scrollToProducts}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/30"
                             >
-                                <span className="text-2xl mb-1">{cat.emoji}</span>
-                                <span className={`text-[10px] font-medium ${isDarkMode ? 'text-teal-200' : 'text-slate-600'}`}>{cat.name}</span>
+                                Start Scouting
                             </button>
-                        ))}
+                        </div>
                     </div>
-                </div>
 
-                {/* Trending */}
-                <div>
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Best Deals Nearby</h3>
-                        <button onClick={() => setActiveTab('search')} className="text-emerald-500 text-xs font-semibold flex items-center">
-                            See All <ChevronRight size={14} />
-                        </button>
+                    {!selectedCategory && products && products.length > 0 && (
+                        <ChefCorner products={products} />
+                    )}
+
+                    <div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                                Categories
+                                {selectedCategory && <span className="ml-2 text-emerald-500 text-sm font-normal">({selectedCategory})</span>}
+                            </h3>
+                            {selectedCategory && (
+                                <button 
+                                    onClick={() => setSelectedCategory(null)}
+                                    className="text-slate-400 text-xs font-semibold flex items-center hover:text-red-500 transition-colors"
+                                >
+                                    <XCircle size={14} className="mr-1" /> Clear Filter
+                                </button>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {categories.map(cat => {
+                                const isActive = selectedCategory === cat.name;
+                                return (
+                                    <button 
+                                        key={cat.name}
+                                        onClick={() => handleCategoryClick(cat.name)}
+                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border shadow-sm transition-all duration-200 ${
+                                            isActive 
+                                            ? 'bg-emerald-500 border-emerald-600 text-white transform scale-105 ring-2 ring-emerald-200' 
+                                            : (isDarkMode ? 'bg-teal-900 border-teal-800 hover:border-emerald-500' : 'bg-white border-slate-100 hover:border-emerald-200')
+                                        }`}
+                                    >
+                                        <span className="text-2xl mb-1">{cat.emoji}</span>
+                                        <span className={`text-[10px] font-medium ${isActive ? 'text-white' : (isDarkMode ? 'text-teal-200' : 'text-slate-600')}`}>{cat.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        {PRODUCTS.slice(0, 4).map(p => (
-                            <ProductCard 
-                                key={p.id} 
-                                product={p} 
-                                onClick={() => setSelectedProduct(p)}
-                            />
-                        ))}
+
+                    <div id="product-list">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                                {selectedCategory ? `${selectedCategory} Deals` : 'Best Deals Nearby'}
+                            </h3>
+                            <button onClick={() => setActiveTab('search')} className="text-emerald-500 text-xs font-semibold flex items-center">
+                                See All <ChevronRight size={14} />
+                            </button>
+                        </div>
+                        
+                        {isLoadingProducts ? (
+                             <div className="flex justify-center py-12">
+                                 <Loader2 className="animate-spin text-emerald-500" size={32} />
+                             </div>
+                        ) : products && products.length > 0 ? (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {products.map(p => (
+                                        <ProductCard 
+                                            key={p.id} 
+                                            product={p} 
+                                            onClick={() => handleProductClick(p)}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="text-xs text-slate-400 mt-6 text-center">
+                                    Debug: Loaded {products.length} Products from Database
+                                </div>
+                            </>
+                        ) : (
+                            <div className={`text-center py-8 border-2 border-dashed rounded-xl ${isDarkMode ? 'border-teal-800' : 'border-slate-200'}`}>
+                                 <p className={`text-sm ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>
+                                     {selectedCategory 
+                                        ? `No products found in "${selectedCategory}".` 
+                                        : "Inventory empty. Use the Import Tool in Profile."}
+                                 </p>
+                                 <div className="text-xs text-slate-400 mt-2">
+                                     Debug: Loaded 0 Products from Database
+                                 </div>
+                                 {selectedCategory && (
+                                     <button 
+                                        onClick={() => setSelectedCategory(null)}
+                                        className="mt-2 text-xs font-bold text-emerald-500"
+                                     >
+                                         Clear Filter
+                                     </button>
+                                 )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
         );
+    }
+    
+    if (activeTab === 'cart') {
+        return (
+            <div className="p-4 pb-24 min-h-screen flex flex-col">
+                {renderHeader()}
+                {cart.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
+                        <div className="text-center max-w-xs">
+                            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isDarkMode ? 'bg-teal-900' : 'bg-slate-100'}`}>
+                                <ShoppingBag className="text-slate-300" size={32} />
+                            </div>
+                            <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Your Basket is Empty</h2>
+                            <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>Add items to your scout list to compare prices across local stores.</p>
+                            <button 
+                                onClick={() => setActiveTab('home')}
+                                className="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold w-full shadow-lg hover:bg-emerald-500"
+                            >
+                                Start Scouting
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex flex-col animate-fade-in overflow-hidden">
+                        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                            {cart.map(item => {
+                                const itemStoreId = item.selectedStoreId || primaryStore?.id;
+                                const unitPrice = itemStoreId ? item.prices[itemStoreId] || 0 : 0;
+                                return (
+                                    <div key={item.id} className={`flex items-center p-3 rounded-xl border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                        <div className="w-16 h-16 rounded-lg bg-white p-1 mr-4 flex-shrink-0">
+                                            <img src={item.image_url} className="h-full w-full object-contain mix-blend-multiply" alt=""/>
+                                        </div>
+                                        <div className="flex-1 min-w-0 mr-2">
+                                            <h4 className={`text-sm font-bold truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.name}</h4>
+                                            <div className="text-xs font-bold text-emerald-500">
+                                                ${(unitPrice * item.quantity).toLocaleString()}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center rounded-full border border-slate-200 overflow-hidden h-8">
+                                                <button onClick={() => updateCartItemQuantity(item.id, -1)} className="px-2 hover:bg-slate-100"><Minus size={14}/></button>
+                                                <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                                                <button onClick={() => updateCartItemQuantity(item.id, 1)} className="px-2 hover:bg-slate-100"><Plus size={14}/></button>
+                                            </div>
+                                            <button onClick={() => removeFromCart(item.id)} className="p-2 text-slate-300 hover:text-rose-500">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        
+                        {/* Summary Section */}
+                        <div className={`mt-6 p-6 rounded-2xl border-t-4 border-emerald-500 ${isDarkMode ? 'bg-teal-900' : 'bg-white shadow-xl'}`}>
+                             <div className="flex justify-between items-center mb-1 text-slate-400 line-through text-sm">
+                                 <span>Worst Total</span>
+                                 <span>${worstTotal.toLocaleString()}</span>
+                             </div>
+                             <div className="flex justify-between items-center mb-1 text-sm font-semibold">
+                                 <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Total</span>
+                                 <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
+                             </div>
+                             {savings > 0 && (
+                                <div className="flex justify-between items-center mb-4 py-2 border-y border-emerald-500/20">
+                                    <span className="text-emerald-500 font-bold flex items-center">
+                                        <TrendingDown size={18} className="mr-1" /> Potential Savings
+                                    </span>
+                                    <span className="text-xl font-extrabold text-emerald-500">
+                                        -${savings.toLocaleString()}
+                                    </span>
+                                </div>
+                             )}
+                             <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-slate-800 transition-colors">
+                                 Finalize Scouting List
+                             </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    if (activeTab === 'profile') {
+        const isAdmin = userEmail && userEmail.endsWith('@shelfscoutja.com');
+
+        return (
+            <div className="p-4 pb-24 min-h-screen">
+                {renderHeader()}
+                <div className="max-w-lg mx-auto">
+                    
+                    {!userEmail ? (
+                        <div className={`p-6 rounded-2xl mb-6 border shadow-sm ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
+                            <h2 className={`font-bold text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Sign In</h2>
+                            <p className={`text-sm mb-4 ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
+                                Enter your email to access your saved items and preferences.
+                            </p>
+                            <form onSubmit={handleLogin} className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input 
+                                        type="email" 
+                                        value={loginInput}
+                                        onChange={(e) => setLoginInput(e.target.value)}
+                                        placeholder="you@example.com"
+                                        className={`w-full pl-9 pr-3 py-2 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-950 border-teal-800 text-white' : 'bg-slate-50 border-slate-200'}`}
+                                        required
+                                    />
+                                </div>
+                                <button 
+                                    type="submit"
+                                    className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm"
+                                >
+                                    Login
+                                </button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className={`p-6 rounded-2xl mb-6 flex items-center justify-between ${isDarkMode ? 'bg-teal-900' : 'bg-white shadow-sm border border-slate-100'}`}>
+                             <div className="flex items-center space-x-4">
+                                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl ${
+                                    isAdmin ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-600'
+                                }`}>
+                                    {userEmail.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div className="flex items-center">
+                                        <h2 className={`font-bold text-sm mr-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                            {userEmail.split('@')[0]}
+                                        </h2>
+                                        {isAdmin && (
+                                            <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-bold flex items-center">
+                                                <Check size={8} className="mr-0.5" /> Admin
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>{userEmail}</div>
+                                </div>
+                             </div>
+                             <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 p-2">
+                                 <LogOut size={18} />
+                             </button>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className={`p-4 rounded-2xl ${isDarkMode ? 'bg-teal-900' : 'bg-slate-900 text-white'}`}>
+                            <div className="flex items-center text-xs opacity-80 mb-1">
+                                <Wallet size={12} className="mr-1" /> Potential Savings
+                            </div>
+                            <div className="text-2xl font-bold text-emerald-400">
+                                ${savings.toLocaleString()}
+                            </div>
+                            <div className="text-[10px] opacity-60">in current cart</div>
+                        </div>
+                        <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
+                             <div className={`flex items-center text-xs mb-1 ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
+                                <Award size={12} className="mr-1" /> Scout Score
+                            </div>
+                            <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                125
+                            </div>
+                            <div className={`text-[10px] ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Top 10% in Parish</div>
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        !isAdminUnlocked ? (
+                            <div className={`p-6 rounded-2xl mb-6 border shadow-sm ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
+                                <div className="flex items-center mb-4">
+                                    <div className={`p-2 rounded-lg mr-3 ${isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
+                                        <Lock size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Security Check</h3>
+                                        <p className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>Restricted Access</p>
+                                    </div>
+                                </div>
+                                
+                                <form onSubmit={handleAdminUnlock}>
+                                    <div className="mb-3">
+                                        <input 
+                                            type="password" 
+                                            value={adminPasswordInput}
+                                            onChange={(e) => setAdminPasswordInput(e.target.value)}
+                                            placeholder="Enter Admin Password"
+                                            className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-amber-500 ${isDarkMode ? 'bg-teal-950 border-teal-800 text-white' : 'bg-slate-50 border-slate-200'}`}
+                                        />
+                                    </div>
+                                    
+                                    {unlockError && (
+                                        <div className="flex items-center text-xs text-red-500 font-bold mb-3 bg-red-500/10 p-2 rounded-lg">
+                                            <AlertCircle size={12} className="mr-1.5 flex-shrink-0" />
+                                            {unlockError}
+                                        </div>
+                                    )}
+                                    
+                                    <button 
+                                        type="submit"
+                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-sm"
+                                    >
+                                        Unlock Dashboard
+                                    </button>
+                                </form>
+                            </div>
+                        ) : (
+                            <div className="mb-6 animate-fade-in">
+                                <h3 className={`font-bold text-xs uppercase tracking-wide mb-3 ${isDarkMode ? 'text-teal-500' : 'text-slate-400'}`}>Admin Controls</h3>
+                                <button 
+                                    onClick={() => setShowAdminUpload(true)}
+                                    className={`w-full p-4 mb-3 rounded-2xl border flex items-center justify-between transition-colors ${
+                                        isDarkMode ? 'bg-teal-900 border-teal-800 hover:bg-teal-800' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
+                                    }`}
+                                >
+                                    <div className="flex items-center">
+                                        <div className={`p-2 rounded-lg mr-3 ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-200 text-emerald-800'}`}>
+                                            <Save size={18} />
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Admin Price Uploader</h3>
+                                            <p className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-emerald-700'}`}>Upload CSV prices</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={16} className={isDarkMode ? 'text-teal-600' : 'text-slate-400'} />
+                                </button>
+
+                                <button 
+                                    onClick={() => setShowImportPage(true)}
+                                    className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-colors ${
+                                        isDarkMode ? 'bg-teal-900 border-teal-800 hover:bg-teal-800' : 'bg-white border-slate-100 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <div className="flex items-center">
+                                        <div className={`p-2 rounded-lg mr-3 ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
+                                            <Database size={18} />
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Product Import Tool</h3>
+                                            <p className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>Upload inventory CSV</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={16} className={isDarkMode ? 'text-teal-600' : 'text-slate-300'} />
+                                </button>
+                            </div>
+                        )
+                    )}
+                    
+                    {savedProducts.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className={`font-bold text-lg mb-3 flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                <Heart size={18} className="mr-2 text-rose-500" fill="currentColor" /> Saved for Later
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {savedProducts.map(p => (
+                                    <div key={p.id} className={`p-3 rounded-xl border flex items-center justify-between ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
+                                        <div className="flex items-center space-x-3 overflow-hidden">
+                                            <div className="w-10 h-10 bg-white rounded-lg p-1 flex-shrink-0">
+                                                <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
+                                            </div>
+                                            <div className="truncate">
+                                                <div className={`text-xs font-bold truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{p.name}</div>
+                                                <div className={`text-[10px] ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>{p.unit}</div>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => removeSavedItem(p.id)}
+                                            className="text-slate-400 hover:text-rose-500 transition-colors p-2"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
     }
 
     if (activeTab === 'search') {
@@ -305,209 +805,125 @@ export const ActiveDashboard: React.FC = () => {
                         ))}
                     </div>
                 </div>
+                
+                {!isLoadingProducts && (!products || products.length === 0) && !productsError && (
+                    <div className={`mt-8 p-6 rounded-2xl text-center ${isDarkMode ? 'bg-teal-900/30' : 'bg-emerald-50'}`}>
+                         <div className="bg-emerald-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                             <Database className="text-emerald-600" size={24} />
+                         </div>
+                         <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Connected to Supabase!</h3>
+                         <p className={`text-sm mt-1 ${isDarkMode ? 'text-teal-300' : 'text-slate-600'}`}>No products found yet.</p>
+                         <button 
+                            onClick={() => setShowImportPage(true)}
+                            className="mt-4 text-xs font-bold text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-full shadow-sm"
+                         >
+                             Import Data Now
+                         </button>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {filteredProducts.map(product => (
                         <ProductCard 
                             key={product.id} 
                             product={product} 
-                            onClick={() => setSelectedProduct(product)}
+                            onClick={() => handleProductClick(product)}
                         />
                     ))}
                 </div>
-                {filteredProducts.length === 0 && (
+                {filteredProducts.length === 0 && products && products.length > 0 && (
                     <div className="text-center mt-20 text-slate-400">
-                        <p>No items found.</p>
+                        <p>No items found matching "{searchTerm}".</p>
                     </div>
                 )}
             </div>
         );
     }
-    
-    if (activeTab === 'cart') {
-        return (
-            <div className="p-4 pb-24 min-h-screen flex flex-col">
-                {renderHeader()}
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    <div className="text-center max-w-xs">
-                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isDarkMode ? 'bg-teal-900' : 'bg-slate-100'}`}>
-                            <TrendingDown className="text-emerald-500" size={32} />
-                        </div>
-                        <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Cart Comparison</h2>
-                        <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>Add items to your cart and we'll tell you exactly which store is cheapest for your whole list.</p>
-                        <button 
-                            onClick={() => setActiveTab('search')}
-                            className="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold w-full shadow-lg hover:bg-emerald-500"
-                        >
-                            Start Scouting
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
 
-    if (activeTab === 'profile') {
-        return (
-            <div className="p-4 pb-24 min-h-screen">
-                {renderHeader()}
-                <div className="max-w-lg mx-auto">
-                    {/* Profile Header */}
-                    <div className={`p-6 rounded-2xl mb-6 flex items-center space-x-4 ${isDarkMode ? 'bg-teal-900' : 'bg-white shadow-sm border border-slate-100'}`}>
-                         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold text-2xl">
-                             S
-                         </div>
-                         <div>
-                             <h2 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Scout Leader</h2>
-                             <div className="text-xs text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full inline-block">
-                                 Level 1 Contributor
-                             </div>
-                         </div>
-                    </div>
-
-                    {/* Stats / Savings Hook */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className={`p-4 rounded-2xl ${isDarkMode ? 'bg-teal-900' : 'bg-slate-900 text-white'}`}>
-                            <div className="flex items-center text-xs opacity-80 mb-1">
-                                <Wallet size={12} className="mr-1" /> Potential Savings
-                            </div>
-                            <div className="text-2xl font-bold text-emerald-400">
-                                ${totalSaved.toLocaleString()}
-                            </div>
-                            <div className="text-[10px] opacity-60">in current cart</div>
-                        </div>
-                        <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                             <div className={`flex items-center text-xs mb-1 ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-                                <Award size={12} className="mr-1" /> Scout Score
-                            </div>
-                            <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                125
-                            </div>
-                            <div className={`text-[10px] ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Top 10% in Parish</div>
-                        </div>
-                    </div>
-                    
-                    {/* Saved Items Section */}
-                    {savedProducts.length > 0 && (
-                        <div className="mb-6">
-                            <h3 className={`font-bold text-lg mb-3 flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                <Heart size={18} className="mr-2 text-rose-500" fill="currentColor" /> Saved for Later
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                {savedProducts.map(p => (
-                                    <div key={p.id} className={`p-3 rounded-xl border flex items-center justify-between ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                                        <div className="flex items-center space-x-3 overflow-hidden">
-                                            <div className="w-10 h-10 bg-white rounded-lg p-1 flex-shrink-0">
-                                                <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
-                                            </div>
-                                            <div className="truncate">
-                                                <div className={`text-xs font-bold truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{p.name}</div>
-                                                <div className={`text-[10px] ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>{p.unit}</div>
-                                            </div>
-                                        </div>
-                                        <button 
-                                            onClick={() => removeSavedItem(p.id)}
-                                            className="text-slate-400 hover:text-rose-500 transition-colors p-2"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Catalogue Builder */}
-                    <div className={`p-6 rounded-2xl ${isDarkMode ? 'bg-teal-900' : 'bg-white shadow-sm border border-slate-100'}`}>
-                        <div className="mb-6">
-                            <h3 className={`font-bold text-lg mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Build the Catalogue</h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-                                Help us grow! Upload details of new items you find in {currentParish?.name}.
-                            </p>
-                        </div>
-
-                        {!itemSubmitted ? (
-                            <div className="space-y-4">
-                                <div>
-                                    <label className={`block text-xs font-bold uppercase mb-2 ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Product Name</label>
-                                    <input 
-                                        type="text"
-                                        value={itemName}
-                                        onChange={(e) => setItemName(e.target.value)}
-                                        placeholder="e.g. Red Stripe 6-Pack"
-                                        className={`w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-800 border-teal-700 text-white' : 'bg-slate-50 border-slate-200'}`}
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className={`block text-xs font-bold uppercase mb-2 ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Observed Price</label>
-                                    <input 
-                                        type="number"
-                                        value={itemPrice}
-                                        onChange={(e) => setItemPrice(e.target.value)}
-                                        placeholder="0.00"
-                                        className={`w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-800 border-teal-700 text-white' : 'bg-slate-50 border-slate-200'}`}
-                                    />
-                                </div>
-
-                                <div className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${isDarkMode ? 'border-teal-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-400'}`}>
-                                    <Camera size={32} className={`mb-2 ${isDarkMode ? 'text-teal-500' : 'text-slate-400'}`} />
-                                    <span className={`text-sm font-medium ${isDarkMode ? 'text-teal-200' : 'text-slate-600'}`}>Take a Photo</span>
-                                    <span className="text-[10px] text-slate-400 mt-1">or select from gallery</span>
-                                </div>
-
-                                <button 
-                                    onClick={() => {
-                                        if (itemName) setItemSubmitted(true);
-                                    }}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-colors flex items-center justify-center"
-                                >
-                                    <Upload size={18} className="mr-2" /> Submit to Catalogue
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 animate-fade-in-up">
-                                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Check className="text-emerald-600" size={32} />
-                                </div>
-                                <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Submitted!</h3>
-                                <p className={`text-sm mb-6 ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-                                    Thanks for adding <strong>{itemName}</strong>. Our team will verify the price and update the app.
-                                </p>
-                                <button 
-                                    onClick={() => {
-                                        setItemSubmitted(false);
-                                        setItemName('');
-                                        setItemPrice('');
-                                    }}
-                                    className="text-emerald-500 font-semibold text-sm underline"
-                                >
-                                    Add another item
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    return <div className="p-10 text-center">Work in progress</div>;
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <Loader2 className="animate-spin text-emerald-500" size={32} />
+        </div>
+    );
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-teal-950' : 'bg-[#f8fafc]'}`}>
-      {renderContent()}
-      <CartDrawer />
+    <>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <ChatBot />
-      
+      <div className={`min-h-screen ${isDarkMode ? 'bg-teal-950 text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
+        {renderContent()}
+      </div>
+
+      {showSignupModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className={`w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden ${isDarkMode ? 'bg-teal-950 border border-teal-800' : 'bg-white'}`}>
+                 <div className="h-24 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center relative overflow-hidden">
+                     <div className="absolute inset-0 bg-white/10 opacity-50 backdrop-blur-3xl"></div>
+                     <Zap size={48} className="text-white relative z-10 drop-shadow-lg" fill="currentColor" />
+                     <button 
+                        onClick={() => setShowSignupModal(false)}
+                        className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-black/20 hover:bg-black/30 backdrop-blur-md"
+                     >
+                         <X size={20} />
+                     </button>
+                 </div>
+
+                 <div className="p-8">
+                     <div className="text-center mb-6">
+                         <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Join the Movement</h2>
+                         <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
+                             Help us grow! Join the Shelf Scout community for updates and exclusive deals in <span className="font-bold text-emerald-500">{currentParish?.name}</span>.
+                         </p>
+                     </div>
+
+                     <form onSubmit={handleActiveSignup} className="space-y-4">
+                         <div>
+                             <input 
+                                 type="text" 
+                                 value={signupName}
+                                 onChange={(e) => setSignupName(e.target.value)}
+                                 placeholder="Your Name"
+                                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-900 border-teal-800 text-white placeholder-teal-600' : 'border-slate-200 bg-slate-50'}`}
+                                 required
+                             />
+                         </div>
+                         <div>
+                             <input 
+                                 type="email" 
+                                 value={signupEmail}
+                                 onChange={(e) => setSignupEmail(e.target.value)}
+                                 placeholder="Email Address"
+                                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-900 border-teal-800 text-white placeholder-teal-600' : 'border-slate-200 bg-slate-50'}`}
+                                 required
+                             />
+                         </div>
+
+                         <button 
+                            type="submit"
+                            disabled={isSigningUp}
+                            className="w-full bg-slate-900 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-[1.02]"
+                         >
+                             {isSigningUp ? 'Joining...' : 'Count Me In! 🎉'}
+                         </button>
+                     </form>
+                     <p className="text-center text-[10px] text-slate-400 mt-4">
+                         No spam. Just savings.
+                     </p>
+                 </div>
+            </div>
+        </div>
+      )}
+
       {selectedProduct && (
-          <ProductModal 
+        <ProductModal 
             product={selectedProduct} 
             onClose={() => setSelectedProduct(null)} 
-          />
+        />
       )}
-    </div>
+
+      <CartDrawer />
+
+      <ChatBot availableProducts={products || []} />
+    </>
   );
 };

@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, ShoppingCart, MapPin, Bell, ArrowUpDown, CheckCircle } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { Product, Store } from '../types';
 import { useShop } from '../context/ShopContext';
-import { STORES } from '../constants';
 import { useTheme } from '../context/ThemeContext';
+import { IS_BETA_MODE } from '../config';
 
 interface Props {
   product: Product;
   onClose: () => void;
 }
+
+// Mock Logos for Store Chains
+const CHAIN_LOGOS: Record<string, string> = {
+  'HiLo': 'https://ui-avatars.com/api/?name=Hi+Lo&background=059669&color=fff&length=2&bold=true',
+  'Progressive': 'https://ui-avatars.com/api/?name=PG&background=2563eb&color=fff&length=2&bold=true',
+  'General Food': 'https://ui-avatars.com/api/?name=GF&background=dc2626&color=fff&length=2&bold=true',
+  'Independent': 'https://ui-avatars.com/api/?name=Ind&background=64748b&color=fff&length=3&bold=true',
+};
 
 // Haversine distance helper
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -23,7 +32,7 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
 };
 
 export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
-  const { currentParish, addToCart, addPriceAlert, removePriceAlert, priceAlerts, userCoords } = useShop();
+  const { currentParish, addToCart, addPriceAlert, removePriceAlert, priceAlerts, userCoords, stores } = useShop();
   const { isDarkMode } = useTheme();
   
   // Local state
@@ -31,20 +40,18 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
   const [alertPrice, setAlertPrice] = useState('');
   const [sortMode, setSortMode] = useState<'price' | 'distance'>('price');
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [isAdded, setIsAdded] = useState(false);
 
   const existingAlert = priceAlerts.find(a => a.productId === product.id);
 
-  if (!currentParish) return null;
-
-  // 1. Prepare Store Data
+  // Prepare Store Data
   const storeData = useMemo(() => {
-    const parishStores = STORES.filter(s => s.parish_id === currentParish.id);
-    
-    // Calculate reference location (User GPS or Parish Center)
+    if (!currentParish) return [];
+
     const refLat = userCoords?.lat || currentParish.coords.lat;
     const refLng = userCoords?.lng || currentParish.coords.lng;
 
-    return parishStores
+    return stores
         .map(store => {
             const price = product.prices[store.id];
             const dist = store.coords 
@@ -53,9 +60,15 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
             return { ...store, price, dist };
         })
         .filter(s => s.price !== undefined);
-  }, [currentParish, product.prices, userCoords]);
+  }, [currentParish, product.prices, userCoords, stores]);
 
-  // 2. Sort Data
+  // Calculate Best Price globally
+  const bestPrice = useMemo(() => {
+    if (storeData.length === 0) return 0;
+    return Math.min(...storeData.map(s => s.price));
+  }, [storeData]);
+
+  // Sort Data
   const sortedStores = useMemo(() => {
       const data = [...storeData];
       if (sortMode === 'price') {
@@ -68,12 +81,11 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
   // Auto-select cheapest on load if nothing selected
   useEffect(() => {
       if (!selectedStoreId && sortedStores.length > 0) {
-          // Default to the cheapest (which is index 0 if sorted by price)
-          // or if sorted by distance, maybe still select cheapest? 
-          // Let's default to the top of the current list.
           setSelectedStoreId(sortedStores[0].id);
       }
   }, [sortedStores, selectedStoreId]);
+
+  if (!currentParish) return null;
 
   const handleSetAlert = () => {
       const price = parseFloat(alertPrice);
@@ -83,9 +95,25 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
       }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const x = (rect.left + rect.width / 2) / window.innerWidth;
+      const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+      confetti({
+        origin: { x, y },
+        particleCount: 100,
+        spread: 70,
+        colors: ['#10B981', '#34D399', '#FCD34D'],
+        zIndex: 1000 
+      });
+
       addToCart(product, selectedStoreId || undefined);
-      onClose();
+      
+      setIsAdded(true);
+      setTimeout(() => {
+          setIsAdded(false);
+      }, 2000);
   };
 
   return (
@@ -189,7 +217,7 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
 
           {/* Store Comparison Header */}
           <div className="flex justify-between items-center mb-3">
-             <h3 className="font-semibold text-sm opacity-80">Available at</h3>
+             <h3 className="font-semibold text-sm opacity-80">Compare All Stores</h3>
              <button 
                 onClick={() => setSortMode(prev => prev === 'price' ? 'distance' : 'price')}
                 className={`flex items-center text-xs font-bold px-2 py-1 rounded-lg transition-colors ${
@@ -205,6 +233,8 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
           <div className="space-y-2 mb-8">
             {sortedStores.map((item) => {
               const isSelected = selectedStoreId === item.id;
+              const logoUrl = CHAIN_LOGOS[item.chain] || CHAIN_LOGOS['Independent'];
+              const isBestPrice = item.price === bestPrice;
               
               return (
                 <div 
@@ -217,26 +247,49 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
                   }`}
                 >
                   <div className="flex items-center">
-                      {/* Radio Indicator */}
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 ${
                           isSelected ? 'border-emerald-500' : 'border-slate-300'
                       }`}>
                           {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />}
                       </div>
 
+                      <img 
+                        src={logoUrl} 
+                        alt={item.chain}
+                        className="w-8 h-8 rounded-full mr-3 border border-slate-100 shadow-sm object-cover"
+                      />
+
                       <div>
-                          <div className={`font-medium text-sm ${isSelected ? 'text-emerald-600' : ''}`}>{item.name}</div>
+                          <div className={`font-medium text-sm flex items-center ${isSelected ? 'text-emerald-600' : ''}`}>
+                              {item.name}
+                              {isBestPrice && (
+                                  <span className="ml-2 text-[9px] bg-yellow-100 text-yellow-800 border border-yellow-200 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                      🏆 Best Price
+                                  </span>
+                              )}
+                          </div>
                           <div className={`text-[10px] flex items-center ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>
-                             <MapPin size={10} className="mr-1" /> {item.dist < 100 ? `${item.dist.toFixed(1)} km away` : item.chain}
+                             <MapPin size={10} className="mr-1" /> {item.dist < 100 ? `${item.dist.toFixed(1)} km away` : (item.location || item.chain)}
                           </div>
                       </div>
                   </div>
-                  <div className={`font-bold ${isSelected ? 'text-emerald-500' : ''}`}>
-                      ${item.price?.toLocaleString()}
+                  <div className="text-right">
+                      <div className={`font-bold ${isSelected ? 'text-emerald-500' : ''} ${IS_BETA_MODE ? 'opacity-60' : ''}`}>
+                          ${item.price?.toLocaleString()}
+                      </div>
+                      {IS_BETA_MODE && (
+                          <div className="text-[7px] uppercase font-extrabold text-amber-600 tracking-tighter">Simulated</div>
+                      )}
                   </div>
                 </div>
               );
             })}
+            
+            {sortedStores.length === 0 && (
+                <div className="p-4 text-center opacity-50 text-sm">
+                    No pricing available in this parish yet.
+                </div>
+            )}
           </div>
         </div>
 
@@ -244,10 +297,25 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
         <div className={`p-4 border-t ${isDarkMode ? 'border-teal-900 bg-teal-950' : 'border-slate-100 bg-white'}`}>
              <button 
                 onClick={handleAddToCart}
-                className="w-full bg-slate-900 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center transition-colors shadow-lg"
+                disabled={sortedStores.length === 0}
+                className={`w-full py-4 rounded-xl font-bold flex items-center justify-center transition-all duration-300 shadow-lg ${
+                    sortedStores.length === 0 
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                    : isAdded
+                        ? 'bg-emerald-500 text-white scale-[1.02]'
+                        : 'bg-slate-900 hover:bg-emerald-600 text-white'
+                }`}
              >
-                 <ShoppingCart size={18} className="mr-2" />
-                 Add Selected (${(sortedStores.find(s => s.id === selectedStoreId)?.price || 0).toLocaleString()})
+                 {isAdded ? (
+                     <>
+                        <CheckCircle size={20} className="mr-2" /> Added!
+                     </>
+                 ) : (
+                     <>
+                        <ShoppingCart size={18} className="mr-2" />
+                        Add Selected ({sortedStores.length > 0 ? `$${(sortedStores.find(s => s.id === selectedStoreId)?.price || 0).toLocaleString()}` : '$0'})
+                     </>
+                 )}
              </button>
         </div>
       </div>

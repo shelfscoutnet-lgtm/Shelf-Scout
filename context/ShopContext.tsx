@@ -1,23 +1,34 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
-import { STORES, PARISHES } from '../constants';
+import { useStores } from '../hooks/useStores';
 
 interface ShopContextType {
   currentParish: Parish | null;
+  setCurrentParish: (parish: Parish) => void;
+  resetParish: () => void;
   isLoadingLocation: boolean;
   manualOverride: (id: string) => void;
   userCoords: { lat: number; lng: number } | null;
+  
+  stores: Store[]; 
+  locations: string[]; // Unique list of locations specific to current parish
+  selectedLocation: string; 
+  setSelectedLocation: (loc: string) => void;
+
   primaryStore: Store | null;
-  comparisonStore: Store | null;
   setPrimaryStore: (id: string) => void;
+  comparisonStore: Store | null;
+  
   cart: CartItem[];
+  cartItemCount: number; // Total number of items (sum of quantities)
   addToCart: (product: Product, storeId?: string) => void;
-  addMultipleToCart: (products: Product[]) => void;
+  addMultipleToCart: (items: {product: Product, storeId?: string}[]) => void;
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, delta: number) => void;
   getCartTotal: (storeId?: string) => number;
   isCartAnimating: boolean;
+  
   priceAlerts: PriceAlert[];
   addPriceAlert: (productId: string, targetPrice: number) => void;
   removePriceAlert: (productId: string) => void;
@@ -27,10 +38,47 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
+  
+  // State for the currently selected Parish
+  const [currentParish, setCurrentParish] = useState<Parish | null>(null);
+
+  // Fetch stores ONLY for the current parish Name (Strict Filtering for Kingston Only strategy)
+  const { stores, loading: isLoadingStores } = useStores(currentParish?.name);
+
+  // Sync detected parish to state only if manually overridden via locator
+  useEffect(() => {
+    if (detectedParish) {
+        setCurrentParish(detectedParish);
+    }
+  }, [detectedParish]);
+
+  const resetParish = () => {
+      setCurrentParish(null);
+      setSelectedLocation('All');
+  };
+
+  const [selectedLocation, setSelectedLocation] = useState<string>('All');
   const [primaryStore, setPrimaryStoreState] = useState<Store | null>(null);
   const [comparisonStore, setComparisonStore] = useState<Store | null>(null);
   const [isCartAnimating, setIsCartAnimating] = useState(false);
   
+  // Extract unique locations from the ALREADY FILTERED stores
+  const locations = useMemo(() => {
+    if (!currentParish || !stores) return [];
+    
+    // Stores are already filtered by parish NAME in useStores hook
+    // We just need to extract locations and Normalize (Title Case)
+    const locs = new Set<string>();
+    stores.forEach(s => {
+        if (s.location && s.location.trim() !== '') {
+            const normalized = s.location.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+            locs.add(normalized);
+        }
+    });
+    
+    return Array.from(locs).sort();
+  }, [stores, currentParish]);
+
   // Initialize Cart from LocalStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -41,6 +89,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [];
     }
   });
+
+  // Calculate total item count (sum of quantities)
+  const cartItemCount = useMemo(() => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  }, [cart]);
 
   // Initialize Price Alerts from LocalStorage
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => {
@@ -70,40 +123,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [priceAlerts]);
 
-  // Logic to calculate Stores based on Parish
+  // Auto-set Primary Store logic
   useEffect(() => {
-    if (detectedParish) {
-      const parishStores = STORES.filter(s => s.parish_id === detectedParish.id);
-      
-      let newPrimary = parishStores.find(s => s.is_premium);
-      if (!newPrimary) {
-        newPrimary = parishStores.length > 0 ? parishStores[0] : STORES[0]; 
-      }
-      setPrimaryStoreState(newPrimary);
-
-      let newComparison: Store | undefined;
-      if (detectedParish.tier === 'active') {
-        newComparison = parishStores.find(s => !s.is_premium && s.id !== newPrimary?.id);
-        if (!newComparison && parishStores.length > 1) {
-             newComparison = parishStores.find(s => s.id !== newPrimary?.id);
-        }
-      } else {
-        const activeParish = PARISHES.find(p => p.tier === 'active');
-        if (activeParish) {
-           const activeStores = STORES.filter(s => s.parish_id === activeParish.id);
-           newComparison = activeStores.find(s => !s.is_premium) || activeStores[0];
-        }
-      }
-
-      if (!newComparison || newComparison.id === newPrimary?.id) {
-         newComparison = STORES.find(s => s.id !== newPrimary?.id);
-      }
-      setComparisonStore(newComparison || null);
+    if (!primaryStore && stores.length > 0) {
+       setPrimaryStoreState(stores[0]);
     }
-  }, [detectedParish]);
+  }, [stores, primaryStore]);
 
   const setPrimaryStore = (storeId: string) => {
-    const s = STORES.find(st => st.id === storeId);
+    const s = stores.find(st => st.id === storeId);
     if (s) setPrimaryStoreState(s);
   };
 
@@ -116,6 +144,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCart(prev => {
       const existing = prev.find(p => p.id === product.id);
       if (existing) {
+        // Smart Add: Increase quantity if exists
         return prev.map(p => p.id === product.id ? { 
             ...p, 
             quantity: p.quantity + 1,
@@ -134,19 +163,23 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return { ...item, quantity: Math.max(0, item.quantity + delta) };
             }
             return item;
-        }).filter(item => item.quantity > 0);
+        }).filter(item => item.quantity > 0); // Logic: Remove if quantity is 0
     });
   };
 
-  const addMultipleToCart = (products: Product[]) => {
+  const addMultipleToCart = (items: {product: Product, storeId?: string}[]) => {
     setCart(prev => {
       let newCart = [...prev];
-      products.forEach(product => {
+      items.forEach(({product, storeId}) => {
         const existingIndex = newCart.findIndex(p => p.id === product.id);
         if (existingIndex >= 0) {
-          newCart[existingIndex] = { ...newCart[existingIndex], quantity: newCart[existingIndex].quantity + 1 };
+          newCart[existingIndex] = { 
+            ...newCart[existingIndex], 
+            quantity: newCart[existingIndex].quantity + 1,
+            selectedStoreId: storeId || newCart[existingIndex].selectedStoreId
+          };
         } else {
-          newCart.push({ ...product, quantity: 1 });
+          newCart.push({ ...product, quantity: 1, selectedStoreId: storeId });
         }
       });
       return newCart;
@@ -158,6 +191,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCart(prev => prev.filter(p => p.id !== productId));
   };
 
+  // Logic: Sum(Item Price * Quantity)
   const getCartTotal = (storeId?: string) => {
     return cart.reduce((total, item) => {
       const targetStoreId = storeId || item.selectedStoreId || primaryStore?.id;
@@ -169,7 +203,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addPriceAlert = (productId: string, targetPrice: number) => {
       setPriceAlerts(prev => {
-          // Remove existing alert for this product if any
           const filtered = prev.filter(a => a.productId !== productId);
           return [...filtered, { productId, targetPrice }];
       });
@@ -179,16 +212,28 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPriceAlerts(prev => prev.filter(a => a.productId !== productId));
   };
 
+  // Wrapper for manual override
+  const handleManualOverride = (id: string) => {
+      manualOverride(id);
+  };
+
   return (
     <ShopContext.Provider value={{
-      currentParish: detectedParish,
+      currentParish,
+      setCurrentParish,
+      resetParish,
       isLoadingLocation,
-      manualOverride,
+      manualOverride: handleManualOverride,
       userCoords,
+      stores,
+      locations,
+      selectedLocation,
+      setSelectedLocation,
       primaryStore,
       comparisonStore,
       setPrimaryStore,
       cart,
+      cartItemCount,
       addToCart,
       addMultipleToCart,
       removeFromCart,

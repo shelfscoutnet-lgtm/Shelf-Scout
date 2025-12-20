@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product } from '../types';
 import { Plus, ChevronDown, ChevronUp, MapPin, Share2, Heart, Check, Store as StoreIcon, TrendingDown, AlertCircle } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { STORES } from '../constants';
 import { useTheme } from '../context/ThemeContext';
+import { IS_BETA_MODE } from '../config';
 
 interface Props {
   product: Product;
@@ -11,11 +11,9 @@ interface Props {
 }
 
 export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
-  const { currentParish, addToCart } = useShop();
+  const { addToCart, stores, selectedLocation } = useShop();
   const { isDarkMode } = useTheme();
-  const [showStoreList, setShowStoreList] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
 
   // Initialize Save State from LocalStorage
   useEffect(() => {
@@ -30,42 +28,36 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
     }
   }, [product.id]);
 
-  if (!currentParish) return null;
+  // Filter stores based on selected region
+  const filteredStores = useMemo(() => {
+      if (selectedLocation === 'All' || selectedLocation.startsWith('All')) {
+          return stores;
+      }
+      return stores.filter(s => s.location === selectedLocation);
+  }, [stores, selectedLocation]);
 
-  // 1. Calculate Local Options
-  const parishStores = STORES.filter(s => s.parish_id === currentParish.id);
-  
-  const storeOptions = parishStores
+  const storeOptions = filteredStores
     .map(store => ({
       id: store.id,
       name: store.name,
       price: product.prices[store.id],
-      chain: store.chain
+      chain: store.chain,
+      location: store.location
     }))
     .filter(option => option.price !== undefined)
-    .sort((a, b) => a.price - b.price); // Sort cheapest first by default
+    .sort((a, b) => a.price - b.price); // Sort cheapest first
 
-  if (storeOptions.length === 0) return null;
-
-  // Calculate Price Spread / Savings
-  const lowestPrice = storeOptions[0].price;
-  const highestPrice = storeOptions[storeOptions.length - 1].price;
-  const priceSpread = highestPrice - lowestPrice;
-  // Robust calculation: (High - Low) / High
-  const savingsPercentage = highestPrice > 0 ? (priceSpread / highestPrice) * 100 : 0;
-  const showSpreadBadge = savingsPercentage > 5; // Threshold 5%
-
-  // Determine active view (default to cheapest if none selected)
-  const activeOption = selectedStoreId 
-    ? storeOptions.find(s => s.id === selectedStoreId) || storeOptions[0]
-    : storeOptions[0];
-
-  const isBestPrice = activeOption.price === lowestPrice;
+  const isAvailable = storeOptions.length > 0;
+  const lowestPrice = isAvailable ? storeOptions[0].price : 0;
+  const storeCount = storeOptions.length;
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}?product=${product.id}`;
-    const text = `Found ${product.name} for $${activeOption.price.toLocaleString()} at ${activeOption.name}. Check it out on Shelf Scout!`;
+    const text = isAvailable 
+        ? `Found ${product.name} from $${lowestPrice.toLocaleString()} in ${selectedLocation}. Check it out on Shelf Scout!`
+        : `Check out ${product.name} on Shelf Scout!`;
+        
     const shareData = {
         title: 'Shelf Scout Price Alert',
         text: text,
@@ -81,8 +73,6 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
     } else {
         try {
             await navigator.clipboard.writeText(`${text} ${url}`);
-            // Fallback feedback could be a toast, but using alert for simplicity as per common request unless toast system exists
-            // The previous code used alert, keeping consistent
             alert('Link copied to clipboard!');
         } catch (err) {
             console.error('Failed to copy', err);
@@ -110,6 +100,10 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
         console.error("Error updating localStorage", e);
     }
   };
+
+  if (!isAvailable) {
+      return null; 
+  }
 
   return (
     <div 
@@ -148,23 +142,12 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
             </button>
         </div>
 
-        {/* Badges Container */}
-        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
-            {/* Best Price Badge - Only if currently viewing the cheapest option */}
-            {isBestPrice && storeOptions.length > 1 && (
-                <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center animate-in fade-in zoom-in duration-300">
-                    <Check size={10} className="mr-1" />
-                    BEST PRICE
-                </div>
-            )}
-
-            {/* Price Spread Badge - Shows if significant savings are available within the parish */}
-            {showSpreadBadge && (
-                <div className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center animate-in fade-in zoom-in duration-300 delay-75" title={`Prices vary by ${Math.round(savingsPercentage)}% across stores`}>
-                    <TrendingDown size={10} className="mr-1" />
-                    {Math.round(savingsPercentage)}% SPREAD
-                </div>
-            )}
+        {/* Store Count Badge */}
+        <div className="absolute top-2 left-2 z-10">
+            <div className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center border border-emerald-200">
+                <StoreIcon size={10} className="mr-1" />
+                Available at {storeCount} Store{storeCount !== 1 ? 's' : ''}
+            </div>
         </div>
       </div>
       
@@ -177,52 +160,15 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
         <div className="mt-auto">
             <div className="flex items-end justify-between">
                 <div className="flex-1 min-w-0 mr-2">
-                    <div className="flex items-baseline">
-                        <div className={`text-lg font-bold ${isDarkMode ? 'text-emerald-400' : 'text-slate-900'}`}>
-                            ${activeOption.price.toLocaleString()}
+                    <div className="flex items-baseline flex-wrap gap-x-1">
+                        <span className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>From</span>
+                        <div className={`text-lg font-bold flex items-center ${isDarkMode ? 'text-emerald-400' : 'text-slate-900'} ${IS_BETA_MODE ? 'opacity-80' : ''}`}>
+                            ${lowestPrice.toLocaleString()}
                         </div>
-                    </div>
-                    
-                    {/* Store Selector */}
-                    <div className="relative">
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowStoreList(!showStoreList);
-                            }}
-                            className={`flex items-center text-[10px] truncate max-w-full font-medium hover:underline ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}
-                        >
-                            @ {activeOption.name}
-                            <ChevronDown size={12} className="ml-1 flex-shrink-0" />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {showStoreList && (
-                            <div className={`absolute left-0 bottom-6 w-48 rounded-lg shadow-xl border z-20 overflow-hidden ${isDarkMode ? 'bg-teal-900 border-teal-700' : 'bg-white border-slate-200'}`}>
-                                <div className={`px-2 py-1 text-[10px] font-bold uppercase border-b ${isDarkMode ? 'bg-teal-950 text-teal-400 border-teal-800' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                    Select Store
-                                </div>
-                                <div className="max-h-32 overflow-y-auto">
-                                    {storeOptions.map((opt) => (
-                                        <button
-                                            key={opt.id}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedStoreId(opt.id);
-                                                setShowStoreList(false);
-                                            }}
-                                            className={`w-full text-left px-3 py-2 text-xs flex justify-between items-center transition-colors ${
-                                                activeOption.id === opt.id 
-                                                ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700')
-                                                : (isDarkMode ? 'text-teal-100 hover:bg-teal-800' : 'text-slate-600 hover:bg-slate-50')
-                                            }`}
-                                        >
-                                            <span className="truncate mr-2">{opt.name}</span>
-                                            <span className="font-semibold">${opt.price.toLocaleString()}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                        {IS_BETA_MODE && (
+                            <span className="text-[8px] uppercase tracking-tighter font-extrabold text-amber-600 bg-amber-100 px-1 rounded-sm border border-amber-200 leading-tight mb-1">
+                                Simulated
+                            </span>
                         )}
                     </div>
                 </div>
@@ -230,8 +176,7 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
                 <button 
                     onClick={(e) => {
                         e.stopPropagation(); 
-                        // PASS THE SELECTED STORE ID TO CART
-                        addToCart(product, selectedStoreId || undefined);
+                        addToCart(product, storeOptions[0].id);
                     }}
                     className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm flex-shrink-0 ${isDarkMode ? 'bg-emerald-500 hover:bg-emerald-400 text-teal-950' : 'bg-slate-900 hover:bg-emerald-600 text-white'}`}
                 >
@@ -240,17 +185,6 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
             </div>
         </div>
       </div>
-      
-      {/* Click outside to close dropdown */}
-      {showStoreList && (
-        <div 
-            className="fixed inset-0 z-10 cursor-default" 
-            onClick={(e) => {
-                e.stopPropagation();
-                setShowStoreList(false);
-            }}
-        />
-      )}
     </div>
   );
 };

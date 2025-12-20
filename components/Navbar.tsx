@@ -8,12 +8,12 @@ interface Props {
 }
 
 export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab }) => {
-  const { cart, isCartAnimating } = useShop();
+  const { cartItemCount, isCartAnimating } = useShop();
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'search', icon: Search, label: 'Search' },
-    { id: 'cart', icon: ShoppingBag, label: 'Cart', badge: cart.length > 0 ? cart.length : null },
+    { id: 'cart', icon: ShoppingBag, label: 'Cart', badge: cartItemCount > 0 ? cartItemCount : null },
     { id: 'profile', icon: User, label: 'Profile' },
   ];
 
@@ -29,12 +29,12 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab }) => {
                 <button 
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className="flex flex-col items-center justify-center w-full h-full space-y-1 relative"
+                    className="flex flex-col items-center justify-center w-full h-full space-y-1 relative group"
                 >
-                    <div className={`transition-all duration-300 ${isActive ? 'text-emerald-600' : 'text-slate-400'} ${isCart && isCartAnimating ? 'scale-125 text-emerald-500 animate-bounce' : ''}`}>
+                    <div className={`transition-all duration-300 relative ${isActive ? 'text-emerald-600' : 'text-slate-400'} ${isCart && isCartAnimating ? 'scale-125 text-emerald-500 animate-bounce' : ''}`}>
                         <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                         {item.badge && (
-                            <span className="absolute top-2 right-6 min-w-[16px] h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold px-1">
+                            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold px-0.5 border-2 border-white">
                                 {item.badge}
                             </span>
                         )}

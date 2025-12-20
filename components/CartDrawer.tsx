@@ -1,25 +1,43 @@
+// Fix: Added explicit typing to Object.values result and implemented detailed savings breakdown in footer
 import React, { useState, useMemo } from 'react';
-import { ShoppingCart, X, ChevronUp, ChevronDown, Check, MapPin, ExternalLink, Navigation, Minus, Plus, Filter } from 'lucide-react';
+import { ShoppingCart, X, ChevronUp, ChevronDown, Check, MapPin, ExternalLink, Navigation, Minus, Plus, Filter, Trash2, TrendingDown } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { STORES } from '../constants';
 import { useTheme } from '../context/ThemeContext';
 
 export const CartDrawer: React.FC = () => {
-  const { cart, getCartTotal, primaryStore, updateCartItemQuantity } = useShop();
+  const { cart, cartItemCount, getCartTotal, primaryStore, updateCartItemQuantity, removeFromCart, stores } = useShop();
   const { isDarkMode } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [filterStoreId, setFilterStoreId] = useState<string>('all');
 
-  if (cart.length === 0) return null;
-
   const total = getCartTotal();
-  const potentialSavings = total * 0.12; 
+
+  // Calculate Real Potential Savings: Difference between the most expensive options and the cheapest ones
+  const { bestTotal, worstTotal, savings } = useMemo(() => {
+    let best = 0;
+    let worst = 0;
+    cart.forEach(item => {
+      const prices = Object.values(item.prices) as number[];
+      if (prices.length > 0) {
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        best += min * item.quantity;
+        worst += max * item.quantity;
+      }
+    });
+    return { bestTotal: best, worstTotal: worst, savings: worst - best };
+  }, [cart]);
 
   // Detect which stores are involved in the current cart
-  const involvedStoreIds = Array.from(new Set(cart.map(item => item.selectedStoreId || primaryStore?.id).filter(Boolean))) as string[];
-  const involvedStores = involvedStoreIds.map(id => STORES.find(s => s.id === id)).filter(Boolean);
+  const involvedStoreIds = useMemo(() => {
+    return Array.from(new Set(cart.map(item => item.selectedStoreId || primaryStore?.id).filter(Boolean))) as string[];
+  }, [cart, primaryStore?.id]);
 
-  // Filter items
+  const involvedStores = useMemo(() => {
+    return involvedStoreIds.map(id => stores.find(s => s.id === id)).filter(Boolean);
+  }, [involvedStoreIds, stores]);
+
+  // Filter items (moved up before potential return)
   const displayCart = useMemo(() => {
       if (filterStoreId === 'all') return cart;
       return cart.filter(item => (item.selectedStoreId || primaryStore?.id) === filterStoreId);
@@ -30,6 +48,9 @@ export const CartDrawer: React.FC = () => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
   };
 
+  // Safe early return after hooks
+  if (cart.length === 0) return null;
+
   return (
     <div className={`fixed bottom-16 left-0 right-0 z-40 transition-all duration-300 ${isOpen ? 'h-[80vh]' : 'h-16'}`}>
       
@@ -39,7 +60,7 @@ export const CartDrawer: React.FC = () => {
             
             {/* Header */}
             <div className={`p-4 border-b flex justify-between items-center rounded-t-3xl ${isDarkMode ? 'bg-teal-950 border-teal-800' : 'bg-white border-slate-100'}`}>
-                <h2 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Scout Basket ({cart.length})</h2>
+                <h2 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Scout Basket ({cartItemCount})</h2>
                 <button onClick={() => setIsOpen(false)} className={`p-2 rounded-full ${isDarkMode ? 'bg-teal-900 text-teal-200' : 'bg-slate-50 text-slate-500'}`}>
                     <ChevronDown size={20} />
                 </button>
@@ -81,54 +102,64 @@ export const CartDrawer: React.FC = () => {
                 ) : (
                     displayCart.map(item => {
                         const itemStoreId = item.selectedStoreId || primaryStore?.id;
-                        const itemStore = STORES.find(s => s.id === itemStoreId);
-                        const price = itemStoreId ? item.prices[itemStoreId] : 0;
+                        const itemStore = stores.find(s => s.id === itemStoreId);
+                        const unitPrice = itemStoreId ? item.prices[itemStoreId] : 0;
+                        const totalItemPrice = unitPrice * item.quantity;
 
                         return (
-                            <div key={item.id} className={`flex justify-between items-center py-2 border-b last:border-0 ${isDarkMode ? 'border-teal-800' : 'border-slate-50'}`}>
-                                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center p-1 flex-shrink-0 ${isDarkMode ? 'bg-teal-900' : 'bg-slate-50'}`}>
-                                        <img src={item.image_url} className="h-full w-full object-contain mix-blend-multiply" alt=""/>
+                            <div key={item.id} className={`flex items-center p-3 rounded-xl border transition-all ${isDarkMode ? 'bg-teal-900/40 border-teal-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                {/* Image */}
+                                <div className={`w-16 h-16 rounded-lg flex items-center justify-center p-1 mr-4 flex-shrink-0 ${isDarkMode ? 'bg-teal-900' : 'bg-slate-50'}`}>
+                                    <img src={item.image_url} className="h-full w-full object-contain mix-blend-multiply" alt=""/>
+                                </div>
+
+                                {/* Name & Price Info */}
+                                <div className="flex-1 min-w-0 mr-2">
+                                    <h4 className={`text-sm font-bold truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.name}</h4>
+                                    <div className={`text-xs mb-1 ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>
+                                        ${unitPrice.toLocaleString()} ea
+                                        {itemStore && (
+                                            <span className="opacity-70 ml-1">@ {itemStore.chain}</span>
+                                        )}
                                     </div>
-                                    <div className="min-w-0 flex-1 mr-2">
-                                        <div className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{item.name}</div>
-                                        <div className={`text-xs flex items-center ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>
-                                            {itemStore && (
-                                                <span className={`text-[10px] px-1.5 rounded truncate max-w-[120px] ${isDarkMode ? 'bg-teal-900 text-teal-300' : 'bg-slate-100 text-slate-600'}`}>
-                                                    @ {itemStore.name}
-                                                </span>
-                                            )}
-                                        </div>
+                                    <div className={`font-bold text-emerald-500 text-sm`}>
+                                        ${totalItemPrice.toLocaleString()}
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-end">
-                                    <div className={`font-bold text-sm mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                        ${(price * item.quantity).toLocaleString()}
-                                    </div>
-                                    {/* Quantity Controls */}
-                                    <div className={`flex items-center rounded-lg ${isDarkMode ? 'bg-teal-800' : 'bg-slate-100'}`}>
+                                {/* Controls */}
+                                <div className="flex items-center gap-3">
+                                    {/* Quantity Pill */}
+                                    <div className={`flex items-center rounded-full h-8 px-1 border ${isDarkMode ? 'bg-teal-800 border-teal-700' : 'bg-slate-50 border-slate-200'}`}>
                                         <button 
                                             onClick={() => updateCartItemQuantity(item.id, -1)}
-                                            className="p-1 hover:text-emerald-500 transition-colors"
+                                            className={`w-7 h-full flex items-center justify-center rounded-full hover:bg-black/5 transition-colors ${isDarkMode ? 'text-teal-200' : 'text-slate-500'}`}
                                         >
-                                            <Minus size={12} />
+                                            <Minus size={14} />
                                         </button>
-                                        <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                                        <span className={`text-xs font-bold w-4 text-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.quantity}</span>
                                         <button 
                                             onClick={() => updateCartItemQuantity(item.id, 1)}
-                                            className="p-1 hover:text-emerald-500 transition-colors"
+                                            className={`w-7 h-full flex items-center justify-center rounded-full hover:bg-black/5 transition-colors ${isDarkMode ? 'text-teal-200' : 'text-slate-500'}`}
                                         >
-                                            <Plus size={12} />
+                                            <Plus size={14} />
                                         </button>
                                     </div>
+
+                                    {/* Trash Icon */}
+                                    <button 
+                                        onClick={() => removeFromCart(item.id)}
+                                        className={`p-2 rounded-full transition-colors ${isDarkMode ? 'text-teal-600 hover:text-red-400 hover:bg-red-900/20' : 'text-slate-300 hover:text-red-500 hover:bg-red-50'}`}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
                             </div>
                         );
                     })
                 )}
 
-                {/* Logistics Route (Only show on 'All' tab or if filtered store matches) */}
+                {/* Logistics Route */}
                 {involvedStores.length > 0 && (
                     <div className={`mt-6 rounded-xl p-4 border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-slate-50 border-slate-100'}`}>
                         <div className={`flex items-center text-xs font-bold uppercase mb-3 ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>
@@ -165,17 +196,31 @@ export const CartDrawer: React.FC = () => {
                 )}
             </div>
 
+            {/* Summary Footer with Potential Savings Hook */}
             <div className={`p-6 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
-                 <div className="flex justify-between items-center mb-2">
-                     <span className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>Estimated Total</span>
-                     <span className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>${total.toLocaleString()}</span>
+                 <div className="space-y-1 mb-4">
+                    <div className="flex justify-between items-center text-slate-400 line-through text-sm">
+                        <span>Subtotal (Max)</span>
+                        <span>${worstTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-semibold">
+                        <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Price</span>
+                        <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
+                    </div>
+                    {savings > 0 && (
+                        <div className="flex justify-between items-center pt-2 mt-2 border-t border-emerald-500/10">
+                            <span className="text-emerald-500 font-bold flex items-center">
+                                <TrendingDown size={18} className="mr-1" /> Potential Savings
+                            </span>
+                            <span className="text-xl font-extrabold text-emerald-500">
+                                -${savings.toLocaleString()}
+                            </span>
+                        </div>
+                    )}
                  </div>
-                 <div className="flex items-center text-xs text-emerald-600 bg-emerald-100 w-max px-2 py-1 rounded-full mb-4">
-                    <Check size={12} className="mr-1" />
-                    You're saving approx ${potentialSavings.toFixed(0)}
-                 </div>
+
                  <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-slate-800 transition-colors">
-                     Complete Shopping List
+                     Complete Scouting List
                  </button>
             </div>
         </div>
@@ -188,15 +233,24 @@ export const CartDrawer: React.FC = () => {
                 onClick={() => setIsOpen(true)}
                 className="bg-slate-900 text-white flex justify-between items-center px-4 py-3 rounded-2xl cursor-pointer shadow-xl hover:bg-slate-800 transition-transform active:scale-95"
             >
-                <div className="flex items-center space-x-3">
-                    <div className="bg-emerald-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                        {cart.length}
-                    </div>
-                    <span className="font-semibold text-sm">View Basket</span>
+                {/* Left: Item Count Circle */}
+                <div className="bg-emerald-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md">
+                    {cartItemCount}
                 </div>
-                <div className="flex items-center font-bold">
-                    ${total.toLocaleString()}
-                    <ChevronUp size={16} className="ml-2 text-slate-400"/>
+                
+                {/* Center: Label */}
+                <span className="font-semibold text-sm">View Basket</span>
+                
+                {/* Right: Price & Savings (Padded for Chatbot) */}
+                <div className="flex items-center font-bold mr-[60px]">
+                    <span>${total.toLocaleString()}</span>
+                    {savings > 0 && (
+                        <span className="ml-2 text-emerald-400 text-xs font-bold flex items-center">
+                            <TrendingDown size={14} className="mr-0.5" />
+                            (-${savings.toLocaleString()})
+                        </span>
+                    )}
+                    <ChevronUp size={16} className="ml-1 text-slate-400"/>
                 </div>
             </div>
         </div>

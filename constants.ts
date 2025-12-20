@@ -1,9 +1,11 @@
 import { Parish, Product, Store } from './types';
 
 export const PARISHES: Parish[] = [
-  { id: 'jm-01', name: 'Kingston', slug: 'kingston', coords: { lat: 17.9712, lng: -76.7928 }, tier: 'active', waitlistCount: 0, launchReadiness: 15 },
-  { id: 'jm-02', name: 'St. Andrew', slug: 'st-andrew', coords: { lat: 18.0846, lng: -76.7928 }, tier: 'active', waitlistCount: 0, launchReadiness: 15 },
-  { id: 'jm-03', name: 'St. Catherine', slug: 'st-catherine', coords: { lat: 18.0059, lng: -77.0040 }, tier: 'active', waitlistCount: 0, launchReadiness: 10 },
+  // COMBINED KSA REGION (ACTIVE)
+  { id: 'jm-ksa', name: 'Kingston & St. Andrew', slug: 'ksa', coords: { lat: 18.0179, lng: -76.8099 }, tier: 'active', waitlistCount: 0, launchReadiness: 100 },
+  
+  // WAITLIST REGIONS (SENSING)
+  { id: 'jm-03', name: 'St. Catherine', slug: 'st-catherine', coords: { lat: 18.0059, lng: -77.0040 }, tier: 'sensing', waitlistCount: 12, launchReadiness: 40 },
   { id: 'jm-04', name: 'Clarendon', slug: 'clarendon', coords: { lat: 17.9947, lng: -77.2280 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 5 },
   { id: 'jm-05', name: 'Manchester', slug: 'manchester', coords: { lat: 18.0517, lng: -77.5156 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 2 },
   { id: 'jm-06', name: 'St. Elizabeth', slug: 'st-elizabeth', coords: { lat: 18.0792, lng: -77.7289 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
@@ -11,7 +13,7 @@ export const PARISHES: Parish[] = [
   { id: 'jm-08', name: 'Hanover', slug: 'hanover', coords: { lat: 18.4239, lng: -78.1469 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
   { id: 'jm-09', name: 'St. James', slug: 'st-james', coords: { lat: 18.3897, lng: -77.8680 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 8 },
   { id: 'jm-10', name: 'Trelawny', slug: 'trelawny', coords: { lat: 18.3695, lng: -77.6258 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
-  { id: 'jm-11', name: 'St. Ann', slug: 'st-ann', coords: { lat: 18.3653, lng: -77.2343 }, tier: 'beta', waitlistCount: 0, launchReadiness: 5 },
+  { id: 'jm-11', name: 'St. Ann', slug: 'st-ann', coords: { lat: 18.3653, lng: -77.2343 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 5 },
   { id: 'jm-12', name: 'St. Mary', slug: 'st-mary', coords: { lat: 18.3079, lng: -76.8929 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
   { id: 'jm-13', name: 'Portland', slug: 'portland', coords: { lat: 18.1251, lng: -76.4800 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
   { id: 'jm-14', name: 'St. Thomas', slug: 'st-thomas', coords: { lat: 17.9252, lng: -76.4357 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
@@ -19,18 +21,18 @@ export const PARISHES: Parish[] = [
 
 // Expanded Store Data to support comparison across key parishes
 export const STORES: Store[] = [
-  // Kingston & St. Andrew
-  { id: 'store_kgn_hilo', name: 'HiLo Manor Park', parish_id: 'jm-02', chain: 'HiLo', is_premium: true, coords: { lat: 18.042, lng: -76.780 } },
-  { id: 'store_kgn_gf', name: 'General Food Liguanea', parish_id: 'jm-02', chain: 'General Food', is_premium: false, coords: { lat: 18.019, lng: -76.772 } },
-  { id: 'store_kgn_sf', name: 'Shoppers Fair Boulevard', parish_id: 'jm-02', chain: 'Independent', is_premium: false, coords: { lat: 18.031, lng: -76.815 } },
-  { id: 'store_kgn_mega', name: 'MegaMart Waterloo', parish_id: 'jm-01', chain: 'Independent', is_premium: true, coords: { lat: 18.015, lng: -76.790 } },
+  // Kingston & St. Andrew (Mapped to jm-ksa)
+  { id: 'store_kgn_hilo', name: 'HiLo Manor Park', parish_id: 'jm-ksa', chain: 'HiLo', is_premium: true, coords: { lat: 18.042, lng: -76.780 } },
+  { id: 'store_kgn_gf', name: 'General Food Liguanea', parish_id: 'jm-ksa', chain: 'General Food', is_premium: false, coords: { lat: 18.019, lng: -76.772 } },
+  { id: 'store_kgn_sf', name: 'Shoppers Fair Boulevard', parish_id: 'jm-ksa', chain: 'Independent', is_premium: false, coords: { lat: 18.031, lng: -76.815 } },
+  { id: 'store_kgn_mega', name: 'MegaMart Waterloo', parish_id: 'jm-ksa', chain: 'Independent', is_premium: true, coords: { lat: 18.015, lng: -76.790 } },
   
   // St. Catherine
   { id: 'store_stc_hilo', name: 'HiLo Spanish Town', parish_id: 'jm-03', chain: 'HiLo', is_premium: false, coords: { lat: 17.995, lng: -76.955 } },
   { id: 'store_stc_prog', name: 'Progressive Portmore', parish_id: 'jm-03', chain: 'Progressive', is_premium: false, coords: { lat: 17.968, lng: -76.885 } },
   { id: 'store_stc_shoppers', name: 'Shoppers Fair Portmore', parish_id: 'jm-03', chain: 'Independent', is_premium: false, coords: { lat: 17.972, lng: -76.890 } },
 
-  // St. Ann (Beta)
+  // St. Ann (Sensing)
   { id: 'store_ann_prog', name: 'Progressive Ocho Rios', parish_id: 'jm-11', chain: 'Progressive', is_premium: true, coords: { lat: 18.407, lng: -77.103 } },
   { id: 'store_ann_gen', name: 'General Food Ocho Rios', parish_id: 'jm-11', chain: 'General Food', is_premium: false, coords: { lat: 18.409, lng: -77.105 } },
 
