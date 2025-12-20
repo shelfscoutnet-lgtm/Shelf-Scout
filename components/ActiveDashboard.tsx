@@ -266,9 +266,16 @@ export const ActiveDashboard: React.FC = () => {
     return (
         <div className="flex flex-col mb-4 pt-4 px-4">
             <div className="flex justify-between items-center mb-4">
-                <h1 className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    Shelf<span className="text-emerald-500">Scout</span>
-                </h1>
+                <div className="flex items-center gap-2">
+                    <img 
+                        src="https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Brand%20logo/shelf-scout-logo.png" 
+                        alt="Shelf Scout Logo" 
+                        className="h-8 w-auto"
+                    />
+                    <h1 className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        Shelf<span className="text-emerald-500">Scout</span>
+                    </h1>
+                </div>
                 
                 <div className="flex items-center space-x-2">
                     <button 

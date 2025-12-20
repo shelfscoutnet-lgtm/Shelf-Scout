@@ -11,10 +11,17 @@ export const ParishSelectionScreen: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-teal-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <h1 className={`text-3xl font-bold tracking-tight mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Shelf<span className="text-emerald-500">Scout</span>
-          </h1>
+        <div className="text-center mb-10 flex flex-col items-center">
+          <div className="flex items-center gap-3 mb-2">
+            <img 
+                src="https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Brand%20logo/shelf-scout-logo.png" 
+                alt="Shelf Scout Logo" 
+                className="h-12 w-auto"
+            />
+            <h1 className={`text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              Shelf<span className="text-emerald-500">Scout</span>
+            </h1>
+          </div>
           <p className={`${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>
             Compare grocery prices across Jamaica.
           </p>
