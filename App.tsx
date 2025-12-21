@@ -61,6 +61,15 @@ const App: React.FC = () => {
           <div className="flex flex-col min-h-screen">
             <BetaBanner />
             <ParishGuard />
+            {/* FOOTER START */}
+      <footer className="mt-12 py-6 text-center text-gray-500 text-sm border-t border-gray-200">
+        <p>© 2025 Shelf Scout JA. All rights reserved.</p>
+        <div className="mt-2 space-x-4">
+          <a href="/privacy.html" className="hover:text-green-600 underline">Privacy Policy</a>
+          <a href="mailto:your-email@gmail.com" className="hover:text-green-600 underline">Contact Us</a>
+        </div>
+      </footer>
+      {/* FOOTER END */}
           </div>
         </ShopProvider>
       </ThemeProvider>
