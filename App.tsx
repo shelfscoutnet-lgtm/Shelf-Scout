@@ -62,7 +62,7 @@ const App: React.FC = () => {
             <BetaBanner />
             <ParishGuard />
             {/* FOOTER START */}
-      <footer className="mt-12 py-6 text-center text-gray-500 text-sm border-t border-gray-200">
+      <footer className="mt-12 py-6 text-center text-gray-500 text-sm border-t border-gray-200 mb-24">
         <p>© 2025 Shelf Scout JA. All rights reserved.</p>
         <div className="mt-2 space-x-4">
           <a href="/privacy.html" className="hover:text-green-600 underline">Privacy Policy</a>
