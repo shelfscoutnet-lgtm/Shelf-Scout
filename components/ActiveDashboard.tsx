@@ -475,9 +475,6 @@ export const ActiveDashboard: React.FC = () => {
                                         />
                                     ))}
                                 </div>
-                                <div className="text-xs text-slate-400 mt-6 text-center">
-                                    Debug: Loaded {products.length} Products from Database
-                                </div>
                             </>
                         ) : (
                             <div className={`text-center py-8 border-2 border-dashed rounded-xl ${isDarkMode ? 'border-teal-800' : 'border-slate-200'}`}>
