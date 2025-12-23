@@ -475,10 +475,27 @@ export const ActiveDashboard: React.FC = () => {
                                         />
                                     ))}
                                 </div>
-                                <div className="mt-10 py-6 border-t border-slate-200 text-center">
+          <div className="mt-10 py-6 border-t border-slate-200 text-center">
           <div className="flex justify-center space-x-6 text-sm text-slate-500">
-            <button className="hover:text-emerald-600 transition-colors">Privacy Policy</button>
-            <button className="hover:text-emerald-600 transition-colors">Contact Support</button>
+            {/* Privacy Policy Link */}
+            <a 
+              href="#" 
+              className="hover:text-emerald-600 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                alert("We need to reconnect your Privacy text. Did we save it in a separate file?");
+              }}
+            >
+              Privacy Policy
+            </a>
+
+            {/* Contact Support Link (Fixed) */}
+            <a 
+              href="mailto:info@shelfscoutja.com" 
+              className="hover:text-emerald-600 transition-colors"
+            >
+              Contact Support
+            </a>
           </div>
           <p className="text-xs text-slate-400 mt-2">© 2025 Shelf Scout Jamaica</p>
         </div>
