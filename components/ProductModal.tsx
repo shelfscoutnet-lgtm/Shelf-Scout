@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, ShoppingCart, MapPin, Bell, ArrowUpDown, CheckCircle } from 'lucide-react';
+// Correctly import confetti from 'canvas-confetti'
 import confetti from 'canvas-confetti';
-import { Product } from '../types';
+import { Product, Store } from '../types';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 import { IS_BETA_MODE } from '../config';
@@ -25,14 +27,14 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
 };
 
 export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
-  // FIX 1: Added 'selectedLocation' to the tools we grab from useShop
-  const { currentParish, addToCart, addPriceAlert, removePriceAlert, priceAlerts, userCoords, stores, selectedLocation } = useShop();
+  const { currentParish, addToCart, addPriceAlert, removePriceAlert, priceAlerts, userCoords, stores } = useShop();
   const { isDarkMode } = useTheme();
   
   // Local state
@@ -44,20 +46,14 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
 
   const existingAlert = priceAlerts.find(a => a.productId === product.id);
 
-  // Prepare Store Data
+  // เตรียม Store Data
   const storeData = useMemo(() => {
     if (!currentParish) return [];
 
     const refLat = userCoords?.lat || currentParish.coords.lat;
     const refLng = userCoords?.lng || currentParish.coords.lng;
 
-    // FIX 2: FILTER THE STORES!
-    // If location is NOT 'All', we remove stores that don't match.
-    const filteredStores = (selectedLocation === 'All' || selectedLocation.startsWith('All'))
-        ? stores
-        : stores.filter(s => s.location === selectedLocation);
-
-    return filteredStores
+    return stores
         .map(store => {
             const price = product.prices[store.id];
             const dist = store.coords 
@@ -66,7 +62,7 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
             return { ...store, price, dist };
         })
         .filter(s => s.price !== undefined);
-  }, [currentParish, product.prices, userCoords, stores, selectedLocation]); // Added selectedLocation to dependencies
+  }, [currentParish, product.prices, userCoords, stores]);
 
   // Calculate Best Price globally
   const bestPrice = useMemo(() => {
@@ -93,6 +89,9 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
 
   if (!currentParish) return null;
 
+  // Badge Logic: Simulated only for Kingston & St. Andrew
+  const isSimulated = IS_BETA_MODE && currentParish?.id === 'jm-ksa';
+
   const handleSetAlert = () => {
       const price = parseFloat(alertPrice);
       if (price > 0) {
@@ -106,6 +105,7 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
       const x = (rect.left + rect.width / 2) / window.innerWidth;
       const y = (rect.top + rect.height / 2) / window.innerHeight;
 
+      // Correct usage of confetti after fix
       confetti({
         origin: { x, y },
         particleCount: 100,
@@ -172,60 +172,58 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
 
           {/* Price Alert Section */}
           <div className={`mb-6 p-4 rounded-xl ${isDarkMode ? 'bg-teal-900' : 'bg-slate-50'}`}>
-              <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-semibold text-sm">Price Watch</h3>
-                  {existingAlert ? (
-                      <button 
-                          onClick={() => removePriceAlert(product.id)}
-                          className="text-xs text-red-500 font-medium"
-                      >
-                          Remove Alert
-                      </button>
-                  ) : (
-                      !showAlertInput && (
-                          <button 
-                             onClick={() => setShowAlertInput(true)}
-                             className="text-xs text-emerald-600 font-bold flex items-center"
-                          >
+             <div className="flex justify-between items-center mb-2">
+                 <h3 className="font-semibold text-sm">Price Watch</h3>
+                 {existingAlert ? (
+                     <button 
+                         onClick={() => removePriceAlert(product.id)}
+                         className="text-xs text-red-500 font-medium"
+                     >
+                         Remove Alert
+                     </button>
+                 ) : (
+                     !showAlertInput && (
+                         <button 
+                            onClick={() => setShowAlertInput(true)}
+                            className="text-xs text-emerald-600 font-bold flex items-center"
+                         >
                              <Bell size={12} className="mr-1" /> Set Alert
-                          </button>
-                      )
-                  )}
-              </div>
+                         </button>
+                     )
+                 )}
+             </div>
 
-              {existingAlert ? (
-                  <div className="flex items-center text-sm text-emerald-500">
-                      <Bell size={14} className="mr-2 fill-emerald-500" />
-                      Alert set for prices below ${existingAlert.targetPrice}
-                  </div>
-              ) : showAlertInput ? (
-                  <div className="flex gap-2">
-                      <input 
+             {existingAlert ? (
+                 <div className="flex items-center text-sm text-emerald-500">
+                     <Bell size={14} className="mr-2 fill-emerald-500" />
+                     Alert set for prices below ${existingAlert.targetPrice}
+                 </div>
+             ) : showAlertInput ? (
+                 <div className="flex gap-2">
+                     <input 
                         type="number" 
                         value={alertPrice}
                         onChange={(e) => setAlertPrice(e.target.value)}
                         placeholder="Target Price"
                         className={`flex-1 p-2 rounded-lg text-sm border ${isDarkMode ? 'bg-teal-800 border-teal-700 text-white' : 'bg-white border-slate-200'}`}
-                      />
-                      <button 
+                     />
+                     <button 
                         onClick={handleSetAlert}
                         className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold"
-                      >
-                          Set
-                      </button>
-                  </div>
-              ) : (
-                  <p className={`text-xs ${isDarkMode ? 'text-teal-300' : 'text-slate-400'}`}>
-                      Get notified when prices drop for this item.
-                  </p>
-              )}
+                     >
+                         Set
+                     </button>
+                 </div>
+             ) : (
+                 <p className={`text-xs ${isDarkMode ? 'text-teal-300' : 'text-slate-400'}`}>
+                     Get notified when prices drop for this item.
+                 </p>
+             )}
           </div>
 
           {/* Store Comparison Header */}
           <div className="flex justify-between items-center mb-3">
-             <h3 className="font-semibold text-sm opacity-80">
-                 {selectedLocation === 'All' ? 'Compare All Stores' : `Prices in ${selectedLocation}`}
-             </h3>
+             <h3 className="font-semibold text-sm opacity-80">Compare All Stores</h3>
              <button 
                 onClick={() => setSortMode(prev => prev === 'price' ? 'distance' : 'price')}
                 className={`flex items-center text-xs font-bold px-2 py-1 rounded-lg transition-colors ${
@@ -249,9 +247,9 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
                   key={item.id} 
                   onClick={() => setSelectedStoreId(item.id)}
                   className={`relative flex justify-between items-center p-3 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
-                        : (isDarkMode ? 'border-teal-800 bg-teal-900/50 hover:bg-teal-800' : 'border-slate-100 bg-slate-50 hover:bg-slate-100')
+                     isSelected
+                       ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
+                       : (isDarkMode ? 'border-teal-800 bg-teal-900/50 hover:bg-teal-800' : 'border-slate-100 bg-slate-50 hover:bg-slate-100')
                   }`}
                 >
                   <div className="flex items-center">
@@ -282,10 +280,10 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
                       </div>
                   </div>
                   <div className="text-right">
-                      <div className={`font-bold ${isSelected ? 'text-emerald-500' : ''} ${IS_BETA_MODE ? 'opacity-60' : ''}`}>
+                      <div className={`font-bold ${isSelected ? 'text-emerald-500' : ''} ${isSimulated ? 'opacity-60' : ''}`}>
                           ${item.price?.toLocaleString()}
                       </div>
-                      {IS_BETA_MODE && (
+                      {isSimulated && (
                           <div className="text-[7px] uppercase font-extrabold text-amber-600 tracking-tighter">Simulated</div>
                       )}
                   </div>
@@ -295,7 +293,7 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
             
             {sortedStores.length === 0 && (
                 <div className="p-4 text-center opacity-50 text-sm">
-                    No pricing available in {selectedLocation}.
+                    No pricing available in this parish yet.
                 </div>
             )}
           </div>

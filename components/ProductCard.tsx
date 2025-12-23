@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
-  const { addToCart, stores, selectedLocation } = useShop();
+  const { addToCart, stores, selectedLocation, currentParish } = useShop();
   const { isDarkMode } = useTheme();
   const [isSaved, setIsSaved] = useState(false);
 
@@ -50,6 +50,9 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
   const isAvailable = storeOptions.length > 0;
   const lowestPrice = isAvailable ? storeOptions[0].price : 0;
   const storeCount = storeOptions.length;
+
+  // Badge Logic: Simulated only for Kingston & St. Andrew
+  const isSimulated = IS_BETA_MODE && currentParish?.id === 'jm-ksa';
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -155,17 +158,17 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
       <div className="p-3 flex flex-col flex-grow">
         <div className={`text-[10px] uppercase font-bold mb-1 tracking-wide ${isDarkMode ? 'text-teal-300' : 'text-slate-400'}`}>{product.category}</div>
         <h3 className={`font-semibold text-sm leading-tight mb-1 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{product.name}</h3>
-        <div className={`text-xs mb-3 ${isDarkMode ? 'text-teal-200' : 'text-slate-500'}`}>{product.unit}</div>
+        <div className={`text-xs mb-3 ${isDarkMode ? 'text-teal-200' : 'text-slate-50'}`}>{product.unit}</div>
         
         <div className="mt-auto">
             <div className="flex items-end justify-between">
                 <div className="flex-1 min-w-0 mr-2">
                     <div className="flex items-baseline flex-wrap gap-x-1">
                         <span className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>From</span>
-                        <div className={`text-lg font-bold flex items-center ${isDarkMode ? 'text-emerald-400' : 'text-slate-900'} ${IS_BETA_MODE ? 'opacity-80' : ''}`}>
+                        <div className={`text-lg font-bold flex items-center ${isDarkMode ? 'text-emerald-400' : 'text-slate-900'} ${isSimulated ? 'opacity-80' : ''}`}>
                             ${lowestPrice.toLocaleString()}
                         </div>
-                        {IS_BETA_MODE && (
+                        {isSimulated && (
                             <span className="text-[8px] uppercase tracking-tighter font-extrabold text-amber-600 bg-amber-100 px-1 rounded-sm border border-amber-200 leading-tight mb-1">
                                 Simulated
                             </span>

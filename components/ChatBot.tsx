@@ -46,7 +46,7 @@ export const ChatBot: React.FC<Props> = ({ availableProducts = [] }) => {
 
     try {
       // Fix: Strictly use process.env.API_KEY as per hard requirements
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       // Create a lightweight context of products to send to the model from REAL Data
       // Fix: Added explicit casting for prices and a non-mutating sort to resolve arithmetic operation type errors

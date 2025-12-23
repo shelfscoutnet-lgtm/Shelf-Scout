@@ -1,11 +1,13 @@
 import { Parish, Product, Store } from './types';
 
 export const PARISHES: Parish[] = [
-  // COMBINED KSA REGION (ACTIVE)
+  // COMBINED KSA REGION (ACTIVE - SIMULATED)
   { id: 'jm-ksa', name: 'Kingston & St. Andrew', slug: 'ksa', coords: { lat: 18.0179, lng: -76.8099 }, tier: 'active', waitlistCount: 0, launchReadiness: 100 },
   
+  // ST. CATHERINE (ACTIVE - LIVE)
+  { id: 'jm-03', name: 'St. Catherine', slug: 'st-catherine', coords: { lat: 18.0059, lng: -77.0040 }, tier: 'active', waitlistCount: 0, launchReadiness: 100 },
+  
   // WAITLIST REGIONS (SENSING)
-  { id: 'jm-03', name: 'St. Catherine', slug: 'st-catherine', coords: { lat: 18.0059, lng: -77.0040 }, tier: 'sensing', waitlistCount: 12, launchReadiness: 40 },
   { id: 'jm-04', name: 'Clarendon', slug: 'clarendon', coords: { lat: 17.9947, lng: -77.2280 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 5 },
   { id: 'jm-05', name: 'Manchester', slug: 'manchester', coords: { lat: 18.0517, lng: -77.5156 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 2 },
   { id: 'jm-06', name: 'St. Elizabeth', slug: 'st-elizabeth', coords: { lat: 18.0792, lng: -77.7289 }, tier: 'sensing', waitlistCount: 0, launchReadiness: 0 },
