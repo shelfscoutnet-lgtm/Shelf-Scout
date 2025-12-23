@@ -2,12 +2,24 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
-
-// ✅ FIX 1: Import directly from constants.ts (Correct File)
 import { PARISHES } from '../constants'; 
 
+// 🚨 EMERGENCY LIFE RAFT 🚨
+// We define St. Catherine right here. 
+// If the app can't find it in the other file, it uses this so it doesn't crash.
+const FALLBACK_PARISH: Parish = {
+  id: 'jm-03',
+  name: 'St. Catherine',
+  slug: 'st-catherine',
+  coords: { lat: 18.0059, lng: -77.0040 },
+  tier: 'active',
+  waitlistCount: 0,
+  launchReadiness: 100,
+  communities: ['Portmore', 'Spanish Town', 'Old Harbour', 'Linstead']
+};
+
 interface ShopContextType {
-  currentParish: Parish | null;
+  currentParish: Parish; // Removed "null" to prevent crashes
   setCurrentParish: (parish: Parish) => void;
   resetParish: () => void;
   isLoadingLocation: boolean;
@@ -42,14 +54,16 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
   
-  // ✅ FIX 2: Use the correct ID 'jm-03' for St. Catherine
-  // If we can't find 'jm-03', fallback to the first item (Kingston)
-  const [currentParish, setCurrentParish] = useState<Parish | null>(
-    PARISHES.find(p => p.id === 'jm-03') || PARISHES[0] || null
-  );
+  // ✅ SAFER INIT LOGIC:
+  // 1. Try to find 'jm-03' (St. Catherine) in the list.
+  // 2. If missing, use the hardcoded FALLBACK_PARISH.
+  // 3. NEVER start as null.
+  const startParish = PARISHES.find(p => p.id === 'jm-03') || FALLBACK_PARISH;
 
-  // Fetch stores ONLY for the current parish Name
-  const { stores, loading: isLoadingStores } = useStores(currentParish?.name);
+  const [currentParish, setCurrentParish] = useState<Parish>(startParish);
+
+  // Fetch stores for the current parish Name
+  const { stores, loading: isLoadingStores } = useStores(currentParish.name);
 
   // Sync detected parish to state only if manually overridden via locator
   useEffect(() => {
@@ -59,7 +73,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [detectedParish]);
 
   const resetParish = () => {
-      setCurrentParish(null);
+      // If resetting, go back to the default (St. Catherine), never null
+      setCurrentParish(startParish);
       setSelectedLocation('All');
   };
 
@@ -68,9 +83,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [comparisonStore, setComparisonStore] = useState<Store | null>(null);
   const [isCartAnimating, setIsCartAnimating] = useState(false);
   
-  // Extract unique locations from the ALREADY FILTERED stores
+  // Extract unique locations
   const locations = useMemo(() => {
-    if (!currentParish || !stores) return [];
+    if (!stores) return [];
     
     const locs = new Set<string>();
     stores.forEach(s => {
@@ -81,7 +96,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     return Array.from(locs).sort();
-  }, [stores, currentParish]);
+  }, [stores]);
 
   // Initialize Cart from LocalStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -94,12 +109,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
-  // Calculate total item count
   const cartItemCount = useMemo(() => {
     return cart.reduce((total, item) => total + item.quantity, 0);
   }, [cart]);
 
-  // Initialize Price Alerts
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => {
     try {
         const savedAlerts = localStorage.getItem('shelf_scout_alerts');
@@ -109,7 +122,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
-  // Persist Cart
   useEffect(() => {
     try {
         localStorage.setItem('shelf_scout_cart', JSON.stringify(cart));
@@ -118,7 +130,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cart]);
 
-  // Persist Alerts
   useEffect(() => {
     try {
         localStorage.setItem('shelf_scout_alerts', JSON.stringify(priceAlerts));
@@ -127,7 +138,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [priceAlerts]);
 
-  // Auto-set Primary Store
   useEffect(() => {
     if (!primaryStore && stores.length > 0) {
        setPrimaryStoreState(stores[0]);
