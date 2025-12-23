@@ -2,12 +2,13 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
-import { PARISHES } from '../constants'; 
 
-// 🚨 EMERGENCY LIFE RAFT 🚨
-// We define St. Catherine right here. 
-// If the app can't find it in the other file, it uses this so it doesn't crash.
-const FALLBACK_PARISH: Parish = {
+// 🛑 DELETE THE BROKEN IMPORT
+// import { PARISHES } from '../constants'; 
+
+// ✅ FIX: Define St. Catherine right here. 
+// Now the app DOES NOT need to find an external file to start.
+const ST_CATHERINE_PARISH: Parish = {
   id: 'jm-03',
   name: 'St. Catherine',
   slug: 'st-catherine',
@@ -19,7 +20,7 @@ const FALLBACK_PARISH: Parish = {
 };
 
 interface ShopContextType {
-  currentParish: Parish; // Removed "null" to prevent crashes
+  currentParish: Parish;
   setCurrentParish: (parish: Parish) => void;
   resetParish: () => void;
   isLoadingLocation: boolean;
@@ -54,13 +55,9 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
   
-  // ✅ SAFER INIT LOGIC:
-  // 1. Try to find 'jm-03' (St. Catherine) in the list.
-  // 2. If missing, use the hardcoded FALLBACK_PARISH.
-  // 3. NEVER start as null.
-  const startParish = PARISHES.find(p => p.id === 'jm-03') || FALLBACK_PARISH;
-
-  const [currentParish, setCurrentParish] = useState<Parish>(startParish);
+  // ✅ NO NULLS, NO CRASHES.
+  // We start directly with the hardcoded St. Catherine data.
+  const [currentParish, setCurrentParish] = useState<Parish>(ST_CATHERINE_PARISH);
 
   // Fetch stores for the current parish Name
   const { stores, loading: isLoadingStores } = useStores(currentParish.name);
@@ -73,8 +70,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [detectedParish]);
 
   const resetParish = () => {
-      // If resetting, go back to the default (St. Catherine), never null
-      setCurrentParish(startParish);
+      setCurrentParish(ST_CATHERINE_PARISH);
       setSelectedLocation('All');
   };
 
@@ -83,7 +79,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [comparisonStore, setComparisonStore] = useState<Store | null>(null);
   const [isCartAnimating, setIsCartAnimating] = useState(false);
   
-  // Extract unique locations
   const locations = useMemo(() => {
     if (!stores) return [];
     
@@ -98,13 +93,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return Array.from(locs).sort();
   }, [stores]);
 
-  // Initialize Cart from LocalStorage
+  // Cart Logic
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
         const savedCart = localStorage.getItem('shelf_scout_cart');
         return savedCart ? JSON.parse(savedCart) : [];
     } catch (e) {
-        console.error("Failed to load cart from storage", e);
         return [];
     }
   });
@@ -126,7 +120,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
         localStorage.setItem('shelf_scout_cart', JSON.stringify(cart));
     } catch (e) {
-        console.error("Failed to save cart to storage", e);
+        console.error(e);
     }
   }, [cart]);
 
@@ -134,7 +128,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
         localStorage.setItem('shelf_scout_alerts', JSON.stringify(priceAlerts));
     } catch (e) {
-        console.error("Failed to save alerts", e);
+        console.error(e);
     }
   }, [priceAlerts]);
 
