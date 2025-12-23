@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef 
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
+import { PARISHES } from '../data/parishes';
 
 interface ShopContextType {
   currentParish: Parish | null;
@@ -39,8 +40,10 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
   
-  // State for the currently selected Parish
-  const [currentParish, setCurrentParish] = useState<Parish | null>(null);
+// State for the currently selected Parish (Default: St. Catherine)
+  const [currentParish, setCurrentParish] = useState<Parish | null>(
+    PARISHES.find(p => p.id === 'st-catherine') || null
+  );
 
   // Fetch stores ONLY for the current parish Name (Strict Filtering for Kingston Only strategy)
   const { stores, loading: isLoadingStores } = useStores(currentParish?.name);
