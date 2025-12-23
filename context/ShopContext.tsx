@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef 
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
-import { PARISHES } from '../data/parishes';
+
+// NOTE: Removed the import that was causing the crash
+// import { PARISHES } from '../data/parishes'; 
 
 interface ShopContextType {
   currentParish: Parish | null;
@@ -13,7 +15,7 @@ interface ShopContextType {
   userCoords: { lat: number; lng: number } | null;
   
   stores: Store[]; 
-  locations: string[]; // Unique list of locations specific to current parish
+  locations: string[]; 
   selectedLocation: string; 
   setSelectedLocation: (loc: string) => void;
 
@@ -22,7 +24,7 @@ interface ShopContextType {
   comparisonStore: Store | null;
   
   cart: CartItem[];
-  cartItemCount: number; // Total number of items (sum of quantities)
+  cartItemCount: number; 
   addToCart: (product: Product, storeId?: string) => void;
   addMultipleToCart: (items: {product: Product, storeId?: string}[]) => void;
   removeFromCart: (productId: string) => void;
@@ -40,12 +42,10 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
   
-// State for the currently selected Parish (Default: St. Catherine)
-  const [currentParish, setCurrentParish] = useState<Parish | null>(
-    PARISHES.find(p => p.id === 'st-catherine') || null
-  );
+  // SAFE FIX: Start as null. The app will auto-detect St. Catherine via GPS.
+  const [currentParish, setCurrentParish] = useState<Parish | null>(null);
 
-  // Fetch stores ONLY for the current parish Name (Strict Filtering for Kingston Only strategy)
+  // Fetch stores ONLY for the current parish Name
   const { stores, loading: isLoadingStores } = useStores(currentParish?.name);
 
   // Sync detected parish to state only if manually overridden via locator
@@ -70,7 +70,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentParish || !stores) return [];
     
     // Stores are already filtered by parish NAME in useStores hook
-    // We just need to extract locations and Normalize (Title Case)
     const locs = new Set<string>();
     stores.forEach(s => {
         if (s.location && s.location.trim() !== '') {
