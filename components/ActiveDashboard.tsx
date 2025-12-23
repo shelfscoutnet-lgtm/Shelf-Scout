@@ -475,9 +475,13 @@ export const ActiveDashboard: React.FC = () => {
                                         />
                                     ))}
                                 </div>
-                                <div className="text-xs text-slate-400 mt-6 text-center">
-                                    Debug: Loaded {products.length} Products from Database
-                                </div>
+                                <div className="mt-10 py-6 border-t border-slate-200 text-center">
+          <div className="flex justify-center space-x-6 text-sm text-slate-500">
+            <button className="hover:text-emerald-600 transition-colors">Privacy Policy</button>
+            <button className="hover:text-emerald-600 transition-colors">Contact Support</button>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">© 2025 Shelf Scout Jamaica</p>
+        </div>
                             </>
                         ) : (
                             <div className={`text-center py-8 border-2 border-dashed rounded-xl ${isDarkMode ? 'border-teal-800' : 'border-slate-200'}`}>
