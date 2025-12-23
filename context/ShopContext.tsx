@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
-// ✅ FIX 1: Import from the correct file (constants.ts)
+
+// ✅ FIX 1: Import directly from constants.ts (Correct File)
 import { PARISHES } from '../constants'; 
 
 interface ShopContextType {
@@ -41,8 +42,8 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
   
-  // ✅ FIX 2: Set default to St. Catherine using the correct ID 'jm-03'
-  // If we can't find it, we fallback to null (safe)
+  // ✅ FIX 2: Use the correct ID 'jm-03' for St. Catherine
+  // If we can't find 'jm-03', fallback to the first item (Kingston)
   const [currentParish, setCurrentParish] = useState<Parish | null>(
     PARISHES.find(p => p.id === 'jm-03') || PARISHES[0] || null
   );
