@@ -476,21 +476,17 @@ export const ActiveDashboard: React.FC = () => {
                                         />
                                     ))}
                                 </div>
-          <div className="mt-10 py-6 border-t border-slate-200 text-center">
+         <div className="mt-10 py-6 border-t border-slate-200 text-center">
           <div className="flex justify-center space-x-6 text-sm text-slate-500">
-            {/* Privacy Policy Link */}
-            <a 
-              href="#" 
-              className="hover:text-emerald-600 transition-colors"
-              onClick={(e) => {
-                e.preventDefault();
-                alert("We need to reconnect your Privacy text. Did we save it in a separate file?");
-              }}
+            {/* Privacy Policy Button (Corrected) */}
+            <button 
+              className="hover:text-emerald-600 transition-colors" 
+              onClick={() => setShowPrivacy(true)}
             >
               Privacy Policy
-            <button className="hover:text-emerald-600 transition-colors" onClick={() => setShowPrivacy(true)}>Privacy Policy</button>
+            </button>
 
-            {/* Contact Support Link (Fixed) */}
+            {/* Contact Support Link */}
             <a 
               href="mailto:info@shelfscoutja.com" 
               className="hover:text-emerald-600 transition-colors"
