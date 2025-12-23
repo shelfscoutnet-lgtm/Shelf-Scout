@@ -1,26 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
 
-// 🛑 DELETE THE BROKEN IMPORT
-// import { PARISHES } from '../constants'; 
-
-// ✅ FIX: Define St. Catherine right here. 
-// Now the app DOES NOT need to find an external file to start.
-const ST_CATHERINE_PARISH: Parish = {
-  id: 'jm-03',
-  name: 'St. Catherine',
-  slug: 'st-catherine',
-  coords: { lat: 18.0059, lng: -77.0040 },
-  tier: 'active',
-  waitlistCount: 0,
-  launchReadiness: 100,
-  communities: ['Portmore', 'Spanish Town', 'Old Harbour', 'Linstead']
-};
-
 interface ShopContextType {
-  currentParish: Parish;
+  currentParish: Parish | null;
   setCurrentParish: (parish: Parish) => void;
   resetParish: () => void;
   isLoadingLocation: boolean;
@@ -28,7 +12,7 @@ interface ShopContextType {
   userCoords: { lat: number; lng: number } | null;
   
   stores: Store[]; 
-  locations: string[]; 
+  locations: string[]; // Unique list of locations specific to current parish
   selectedLocation: string; 
   setSelectedLocation: (loc: string) => void;
 
@@ -37,7 +21,7 @@ interface ShopContextType {
   comparisonStore: Store | null;
   
   cart: CartItem[];
-  cartItemCount: number; 
+  cartItemCount: number; // Total number of items (sum of quantities)
   addToCart: (product: Product, storeId?: string) => void;
   addMultipleToCart: (items: {product: Product, storeId?: string}[]) => void;
   removeFromCart: (productId: string) => void;
@@ -55,12 +39,11 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { detectedParish, loading: isLoadingLocation, manualOverride, userCoords } = useParishLocator();
   
-  // ✅ NO NULLS, NO CRASHES.
-  // We start directly with the hardcoded St. Catherine data.
-  const [currentParish, setCurrentParish] = useState<Parish>(ST_CATHERINE_PARISH);
+  // State for the currently selected Parish
+  const [currentParish, setCurrentParish] = useState<Parish | null>(null);
 
-  // Fetch stores for the current parish Name
-  const { stores, loading: isLoadingStores } = useStores(currentParish.name);
+  // Fetch stores ONLY for the current parish Name (Strict Filtering for Kingston Only strategy)
+  const { stores, loading: isLoadingStores } = useStores(currentParish?.name);
 
   // Sync detected parish to state only if manually overridden via locator
   useEffect(() => {
@@ -70,7 +53,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [detectedParish]);
 
   const resetParish = () => {
-      setCurrentParish(ST_CATHERINE_PARISH);
+      setCurrentParish(null);
       setSelectedLocation('All');
   };
 
@@ -79,9 +62,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [comparisonStore, setComparisonStore] = useState<Store | null>(null);
   const [isCartAnimating, setIsCartAnimating] = useState(false);
   
+  // Extract unique locations from the ALREADY FILTERED stores
   const locations = useMemo(() => {
-    if (!stores) return [];
+    if (!currentParish || !stores) return [];
     
+    // Stores are already filtered by parish NAME in useStores hook
+    // We just need to extract locations and Normalize (Title Case)
     const locs = new Set<string>();
     stores.forEach(s => {
         if (s.location && s.location.trim() !== '') {
@@ -91,22 +77,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     return Array.from(locs).sort();
-  }, [stores]);
+  }, [stores, currentParish]);
 
-  // Cart Logic
+  // Initialize Cart from LocalStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
         const savedCart = localStorage.getItem('shelf_scout_cart');
         return savedCart ? JSON.parse(savedCart) : [];
     } catch (e) {
+        console.error("Failed to load cart from storage", e);
         return [];
     }
   });
 
+  // Calculate total item count (sum of quantities)
   const cartItemCount = useMemo(() => {
     return cart.reduce((total, item) => total + item.quantity, 0);
   }, [cart]);
 
+  // Initialize Price Alerts from LocalStorage
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => {
     try {
         const savedAlerts = localStorage.getItem('shelf_scout_alerts');
@@ -116,22 +105,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  // Persist Cart
   useEffect(() => {
     try {
         localStorage.setItem('shelf_scout_cart', JSON.stringify(cart));
     } catch (e) {
-        console.error(e);
+        console.error("Failed to save cart to storage", e);
     }
   }, [cart]);
 
+  // Persist Alerts
   useEffect(() => {
     try {
         localStorage.setItem('shelf_scout_alerts', JSON.stringify(priceAlerts));
     } catch (e) {
-        console.error(e);
+        console.error("Failed to save alerts", e);
     }
   }, [priceAlerts]);
 
+  // Auto-set Primary Store logic
   useEffect(() => {
     if (!primaryStore && stores.length > 0) {
        setPrimaryStoreState(stores[0]);
@@ -145,13 +137,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const triggerCartAnimation = () => {
     setIsCartAnimating(true);
-    setTimeout(() => setIsCartAnimating(false), 500); 
+    setTimeout(() => setIsCartAnimating(false), 500); // 500ms bounce duration
   };
 
   const addToCart = (product: Product, storeId?: string) => {
     setCart(prev => {
       const existing = prev.find(p => p.id === product.id);
       if (existing) {
+        // Smart Add: Increase quantity if exists
         return prev.map(p => p.id === product.id ? { 
             ...p, 
             quantity: p.quantity + 1,
@@ -170,7 +163,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return { ...item, quantity: Math.max(0, item.quantity + delta) };
             }
             return item;
-        }).filter(item => item.quantity > 0); 
+        }).filter(item => item.quantity > 0); // Logic: Remove if quantity is 0
     });
   };
 
@@ -198,6 +191,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCart(prev => prev.filter(p => p.id !== productId));
   };
 
+  // Logic: Sum(Item Price * Quantity)
   const getCartTotal = (storeId?: string) => {
     return cart.reduce((total, item) => {
       const targetStoreId = storeId || item.selectedStoreId || primaryStore?.id;
@@ -218,6 +212,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPriceAlerts(prev => prev.filter(a => a.productId !== productId));
   };
 
+  // Wrapper for manual override
   const handleManualOverride = (id: string) => {
       manualOverride(id);
   };
