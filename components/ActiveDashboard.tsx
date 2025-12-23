@@ -43,6 +43,7 @@ export const ActiveDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [showImportPage, setShowImportPage] = useState(false);
   const [showAdminUpload, setShowAdminUpload] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   
   const [userEmail, setUserEmail] = useState<string | null>(() => {
       try { return localStorage.getItem('shelf_scout_user_email'); } catch { return null; }
@@ -487,7 +488,7 @@ export const ActiveDashboard: React.FC = () => {
               }}
             >
               Privacy Policy
-            </a>
+            <button className="hover:text-emerald-600 transition-colors" onClick={() => setShowPrivacy(true)}>Privacy Policy</button>
 
             {/* Contact Support Link (Fixed) */}
             <a 
@@ -939,6 +940,118 @@ export const ActiveDashboard: React.FC = () => {
                      </p>
                  </div>
             </div>
+        </div>
+      )}
+      {/* Privacy Policy Modal - REAL DPA TEXT */}
+      {showPrivacy && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl relative">
+            
+            {/* Close Button (Top Right) */}
+            <button 
+              onClick={() => setShowPrivacy(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold mb-2 text-slate-800">Privacy Policy for Shelf Scout</h2>
+            <p className="text-sm text-slate-500 mb-6 italic border-b pb-4">Effective Date: December 14, 2025</p>
+
+            <div className="text-sm text-slate-600 space-y-6 text-left">
+              
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">1. Introduction & Compliance with Jamaican Law</h3>
+                <p className="mb-2">
+                  Shelf Scout ("we," "us," or "our") respects the privacy of our users ("you" or "Data Subject") and is committed to protecting your personal data in accordance with the <strong>Data Protection Act, 2020 (the "DPA") of Jamaica.</strong>
+                </p>
+                <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 mt-3">
+                  <p className="font-semibold text-xs uppercase text-emerald-600 mb-1">Data Controller Identity</p>
+                  <p className="font-medium text-slate-800">Shelf Scout</p>
+                  <p>Watchwell, Watchwell P.A.</p>
+                  <p>St. Elizabeth, Jamaica</p>
+                  <p className="mt-1">Email: <a href="mailto:info@shelfscoutja.com" className="text-emerald-700 underline">info@shelfscoutja.com</a></p>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">2. The Personal Data We Collect</h3>
+                <ul className="list-disc pl-5 space-y-1 marker:text-emerald-500">
+                  <li><strong>Identity Data:</strong> Name, username (if you register).</li>
+                  <li><strong>Contact Data:</strong> Email address (for newsletters or account management).</li>
+                  <li><strong>Technical Data:</strong> IP address, browser type, and location data (e.g., distinguishing Hilo Spanish Town vs. Kingston).</li>
+                  <li><strong>Usage Data:</strong> Which grocery products you search for and click on.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">3. Lawful Basis for Processing</h3>
+                <p className="mb-2">Under Jamaican law, we rely on the following:</p>
+                <ul className="list-disc pl-5 space-y-1 marker:text-emerald-500">
+                  <li><strong>Consent:</strong> Explicit agreement for newsletters/cookies.</li>
+                  <li><strong>Performance of a Contract:</strong> Providing requested services (e.g., saving lists).</li>
+                  <li><strong>Legitimate Interests:</strong> Improving security and preventing fraud.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">4. How We Use Your Data</h3>
+                <p>We use your data to compare grocery prices, manage accounts, deliver alerts, and attribute affiliate commissions (via Amazon Associates).</p>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">5. International Transfers (Tech Stack)</h3>
+                <p>
+                  We utilize third-party cloud service providers (Google Firebase/Supabase). While Shelf Scout is based in Jamaica, your data may be stored on secure servers abroad. By using our services, you consent to this transfer.
+                </p>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">6. Disclosure to Third Parties</h3>
+                <p>
+                  We do not sell your personal data. We share strict operational data with Service Providers (Google Cloud), Analytics Providers, or legal authorities (Jamaican Constabulary Force/Courts) if required.
+                </p>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">7. Your Rights Under the Jamaican DPA</h3>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to be Informed</li>
+                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right of Access</li>
+                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Rectification</li>
+                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Erasure</li>
+                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Restrict Processing</li>
+                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Data Portability</li>
+                </ul>
+                <p className="mt-2 text-xs">To exercise these rights, contact <a href="mailto:info@shelfscoutja.com" className="text-emerald-600 hover:underline">info@shelfscoutja.com</a>.</p>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">8. Affiliate Disclosure</h3>
+                <p>
+                  Shelf Scout uses affiliate links, including the Amazon Associates Program. Clicking links and making purchases may result in us earning a commission at no extra cost to you.
+                </p>
+              </section>
+
+               <section>
+                <h3 className="font-bold text-slate-900 text-lg mb-2">9. Data Retention & OIC</h3>
+                <p>
+                  We retain data only as long as necessary. You have the right to complain to the Office of the Information Commissioner (OIC) in Jamaica, but we appreciate the chance to resolve concerns first.
+                </p>
+              </section>
+
+            </div>
+
+            {/* Bottom Close Button */}
+            <div className="sticky bottom-0 bg-white pt-4 border-t mt-6">
+              <button 
+                onClick={() => setShowPrivacy(false)}
+                className="w-full py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-lg"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
