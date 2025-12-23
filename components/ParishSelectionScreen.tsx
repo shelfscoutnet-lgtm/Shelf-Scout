@@ -53,7 +53,7 @@ export const ParishSelectionScreen: React.FC = () => {
                     <div className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                         {parish.name}
                     </div>
-                    {parish.tier !== 'active' && (
+                    {parish.tier !== 'active' && parish.id !== 'st-catherine' && (
                         <div className="text-[10px] text-emerald-500 font-medium">Coming Soon</div>
                     )}
                   </div>
