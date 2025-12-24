@@ -36,6 +36,7 @@ export const ActiveDashboard: React.FC = () => {
 
   const { isDarkMode, toggleTheme } = useTheme();
   
+  console.log("DEBUG LOCATION:", selectedLocation);
   const signupsData = useSignups(selectedLocation?.id);
   const signupCount = signupsData ? (signupsData.signupCount || 0) : 0;
   const submitSignup = signupsData ? signupsData.submitSignup : undefined;
