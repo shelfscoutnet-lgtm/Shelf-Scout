@@ -27,7 +27,7 @@ export const useProducts = (category?: string | null) => {
 .order('name', { ascending: true });
         // Apply category filter if present
         if (category && category !== 'All') {
-            query = query.eq('category', category);
+            query = query.ilike('category', `%${category}%`);
         }
 
         const { data, error } = await query;
