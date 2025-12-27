@@ -23,7 +23,7 @@ export const useProducts = (category?: string | null) => {
               store_id,
               price
             )
-          `);
+          `)
 .order('name', { ascending: true });
         // Apply category filter if present
         if (category && category !== 'All') {
