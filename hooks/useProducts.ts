@@ -24,7 +24,8 @@ export const useProducts = (category?: string | null) => {
               price
             )
           `);
-
+.order('name', { ascending: true });
+        
         // Apply category filter if present
         if (category && category !== 'All') {
             query = query.eq('category', category);
