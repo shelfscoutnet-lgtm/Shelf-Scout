@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Product } from '../types';
-import { Plus, ChevronDown, ChevronUp, MapPin, Share2, Heart, Check, Store as StoreIcon, TrendingDown, AlertCircle } from 'lucide-react';
+import { Plus, MapPin, Share2, Heart, Store as StoreIcon } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 import { IS_BETA_MODE } from '../config';
@@ -51,7 +51,7 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
   const lowestPrice = isAvailable ? storeOptions[0].price : 0;
   const storeCount = storeOptions.length;
 
-  // Badge Logic: Simulated only for Kingston & St. Andrew
+  // Badge Logic
   const isSimulated = IS_BETA_MODE && currentParish?.id === 'jm-ksa';
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -111,81 +111,104 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
   return (
     <div 
         onClick={onClick}
-        className={`cursor-pointer rounded-2xl border overflow-hidden flex flex-col h-full shadow-sm hover:shadow-lg transition-all relative group ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}
+        className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-xl cursor-pointer
+        ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100 hover:border-emerald-200'}`}
     >
       
-      {/* Image Area */}
-      <div className="h-32 w-full flex items-center justify-center p-4 relative bg-white">
+      {/* --- IMAGE AREA (Strict Grid Update) --- */}
+      {/* "aspect-square" forces this to be a perfect box. "p-6" gives the product room to breathe. */}
+      <div className={`relative w-full aspect-square flex items-center justify-center p-6 
+        ${isDarkMode ? 'bg-teal-800/50' : 'bg-slate-50'}`}>
+        
         <img 
             src={product.image_url} 
             alt={product.name} 
-            className="max-h-full object-contain mix-blend-multiply transition-transform group-hover:scale-105" 
+            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" 
         />
         
-        {/* Action Buttons */}
-        <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+        {/* Top Right Actions (Save/Share) */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button 
                 onClick={toggleSave}
-                className={`p-1.5 rounded-full transition-colors shadow-sm ${
+                className={`p-2 rounded-full shadow-sm transition-colors ${
                     isSaved 
-                    ? 'bg-rose-50 text-rose-500 hover:bg-rose-100' 
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-rose-500'
+                    ? 'bg-rose-50 text-rose-500' 
+                    : 'bg-white text-slate-400 hover:text-rose-500'
                 }`}
-                title={isSaved ? "Remove from saved" : "Save for later"}
             >
-                <Heart size={14} fill={isSaved ? "currentColor" : "none"} />
+                <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
             </button>
 
             <button 
                 onClick={handleShare}
-                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shadow-sm"
-                title="Share deal"
+                className="p-2 rounded-full bg-white text-slate-600 shadow-sm hover:bg-slate-50 transition-colors"
             >
-                <Share2 size={14} />
+                <Share2 size={16} />
             </button>
         </div>
 
-        {/* Store Count Badge */}
-        <div className="absolute top-2 left-2 z-10">
-            <div className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center border border-emerald-200">
-                <StoreIcon size={10} className="mr-1" />
-                Available at {storeCount} Store{storeCount !== 1 ? 's' : ''}
+        {/* Top Left Store Badge */}
+        <div className="absolute top-3 left-3 z-10">
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm border
+                ${product.store_count > 1 
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                  : 'bg-white/90 text-slate-600 border-slate-200'}`}>
+                <StoreIcon size={10} />
+                {product.store_count > 1 ? `${storeCount} Stores` : '1 Store'}
             </div>
         </div>
       </div>
       
-      {/* Content Area */}
-      <div className="p-3 flex flex-col flex-grow">
-        <div className={`text-[10px] uppercase font-bold mb-1 tracking-wide ${isDarkMode ? 'text-teal-300' : 'text-slate-400'}`}>{product.category}</div>
-        <h3 className={`font-semibold text-sm leading-tight mb-1 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{product.name}</h3>
-        <div className={`text-xs mb-3 ${isDarkMode ? 'text-teal-200' : 'text-slate-50'}`}>{product.unit}</div>
+      {/* --- CONTENT AREA --- */}
+      <div className="flex h-full flex-col p-4">
+        {/* Category */}
+        <div className={`text-[10px] uppercase font-bold tracking-wider mb-1.5 
+            ${isDarkMode ? 'text-teal-300' : 'text-slate-400'}`}>
+            {product.category}
+        </div>
+
+        {/* Title (Forced Height Update) */}
+        {/* h-10 line-clamp-2 forces the title to always be 2 lines tall, ensuring alignment */}
+        <h3 className={`font-semibold text-sm leading-snug line-clamp-2 h-10 mb-1 
+            ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {product.name}
+        </h3>
         
-        <div className="mt-auto">
-            <div className="flex items-end justify-between">
-                <div className="flex-1 min-w-0 mr-2">
-                    <div className="flex items-baseline flex-wrap gap-x-1">
-                        <span className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>From</span>
-                        <div className={`text-lg font-bold flex items-center ${isDarkMode ? 'text-emerald-400' : 'text-slate-900'} ${isSimulated ? 'opacity-80' : ''}`}>
-                            ${lowestPrice.toLocaleString()}
-                        </div>
-                        {isSimulated && (
-                            <span className="text-[8px] uppercase tracking-tighter font-extrabold text-amber-600 bg-amber-100 px-1 rounded-sm border border-amber-200 leading-tight mb-1">
-                                Simulated
-                            </span>
-                        )}
-                    </div>
+        {/* Unit Size */}
+        <div className={`text-xs mb-4 ${isDarkMode ? 'text-teal-200' : 'text-slate-500'}`}>
+            {product.unit}
+        </div>
+        
+        {/* Footer: Price & Add Button */}
+        <div className="mt-auto flex items-end justify-between border-t pt-3 border-transparent">
+            <div className="flex flex-col">
+                <span className={`text-[10px] font-medium ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>
+                    From
+                </span>
+                <div className="flex items-center gap-2">
+                    <span className={`text-lg font-bold ${isDarkMode ? 'text-emerald-400' : 'text-slate-900'}`}>
+                        ${lowestPrice.toLocaleString()}
+                    </span>
+                    {isSimulated && (
+                        <span className="text-[9px] uppercase font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                            Beta
+                        </span>
+                    )}
                 </div>
-                
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation(); 
-                        addToCart(product, storeOptions[0].id);
-                    }}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm flex-shrink-0 ${isDarkMode ? 'bg-emerald-500 hover:bg-emerald-400 text-teal-950' : 'bg-slate-900 hover:bg-emerald-600 text-white'}`}
-                >
-                    <Plus size={16} />
-                </button>
             </div>
+            
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation(); 
+                    addToCart(product, storeOptions[0].id);
+                }}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm
+                ${isDarkMode 
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-teal-950' 
+                  : 'bg-slate-900 hover:bg-emerald-600 text-white'}`}
+            >
+                <Plus size={18} />
+            </button>
         </div>
       </div>
     </div>
