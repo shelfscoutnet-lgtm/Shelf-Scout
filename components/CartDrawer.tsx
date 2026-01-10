@@ -196,37 +196,43 @@ export const CartDrawer: React.FC = () => {
                 )}
             </div>
 
-           {/* Summary Footer with Potential Savings Hook */}
-        <div className={`p-6 pr-24 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
-          <div className="space-y-1 mb-4">
-            <div className="flex justify-between items-center text-slate-400 line-through text-sm">
-              <span>Subtotal (Max)</span>
-              <span>${worstTotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm font-semibold">
-              <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Price</span>
-              <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
-            </div>
+       {/* Summary Footer with Potential Savings Hook */}
+      <div className={`p-6 pr-24 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
+        <div className="space-y-1 mb-4">
+          <div className="flex justify-between items-center text-slate-400 line-through text-sm">
+            <span>Subtotal (Max)</span>
+            <span>${worstTotal.toLocaleString()}</span>
           </div>
-          {savings > 0 && (
-            <div className="flex justify-between items-center pt-2 mt-2 border-t border-emerald-500/10">
-              <span className="text-emerald-500 font-bold flex items-center">
-                <TrendingDown size={18} className="mr-1" /> Potential Savings
-              </span>
-              <span className="text-xl font-extrabold text-emerald-500">
-                -${savings.toLocaleString()}
-              </span>
-            </div>
-          )}
+          <div className="flex justify-between items-center text-sm font-semibold">
+            <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Price</span>
+            <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
+          </div>
         </div>
-                 <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-slate-800 transition-colors">
-                     Complete Scouting List
-                 </button>
-            </div>
-        </div>
-      )}
 
-      {/* Collapsed Sticky Bar (Floating above nav) */}
+        {savings > 0 && (
+          <div className="flex justify-between items-center pt-2 mt-2 border-t border-emerald-500/10">
+            <span className="text-emerald-500 font-bold flex items-center">
+              <TrendingDown size={18} className="mr-1" /> Potential Savings
+            </span>
+            <span className="text-xl font-extrabold text-emerald-500">
+              -${savings.toLocaleString()}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Main Finalize Button (Visible when Open) */}
+      <div className={`p-4 border-t pb-24 ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-white border-slate-100'}`}>
+         <button 
+           className="w-full bg-slate-900 text-white font-bold py-4 px-6 rounded-xl shadow-lg flex justify-between items-center hover:bg-slate-800 transition-all active:scale-95 pr-24"
+           onClick={() => { /* Add your finalize logic here if needed, or keep it visual for beta */ }}
+         >
+            <span>Finalize List</span>
+            <span className="bg-slate-800 py-1 px-3 rounded-lg text-sm">${total.toLocaleString()}</span>
+         </button>
+      </div>
+
+      {/* Collapsed Sticky Bar (Floating when Closed) */}
       {!isOpen && (
         <div className="px-4 pb-2 w-full">
           <div
@@ -241,22 +247,13 @@ export const CartDrawer: React.FC = () => {
               <span className="font-semibold text-sm">Review Order</span>
             </div>
 
-            {/* Right: Price (Padded safely from Chatbot) */}
+            {/* Right: Price */}
             <div className="flex flex-col items-end">
               <span className="font-bold text-lg">${total.toLocaleString()}</span>
-              {savings > 0 && (
-                <span className="text-emerald-400 text-[10px] font-bold">
-                  Saved ${savings.toLocaleString()}
-                </span>
-              )}
             </div>
           </div>
         </div>
       )}
-                </div>
-            </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
