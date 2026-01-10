@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingCart, X, ChevronUp, ChevronDown, Check, MapPin, ExternalLink, Navigation, Minus, Plus, Filter, Trash2, TrendingDown } from 'lucide-react';
+import { ChevronDown, MapPin, ExternalLink, Navigation, Minus, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -44,15 +44,15 @@ export const CartDrawer: React.FC = () => {
 
   const openMap = (storeName: string) => {
     const query = encodeURIComponent(`${storeName} Jamaica`);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+    window.open(`http://maps.google.com/?q=${query}`, '_blank');
   };
 
   // Safe early return if empty
   if (cart.length === 0) return null;
 
   return (
-    // Main Container: Handles the height transition from small bar to full drawer
-    <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ease-in-out ${isOpen ? 'h-[85vh]' : 'h-24'}`}>
+    // FIX APPLIED HERE: Restored 'bottom-16' so it sits ABOVE the nav bar, not behind it.
+    <div className={`fixed bottom-16 left-0 right-0 z-40 transition-all duration-300 ease-in-out ${isOpen ? 'h-[80vh]' : 'h-16'}`}>
       
       {/* Backdrop (Only visible when open) */}
       {isOpen && (
@@ -204,7 +204,6 @@ export const CartDrawer: React.FC = () => {
                 </div>
 
                 {/* Footer Section: Totals & Actions */}
-                {/* Added 'pr-24' to container to ensure chat bubble doesn't overlap text */}
                 <div className={`p-6 pr-24 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="space-y-1 mb-4">
                         <div className="flex justify-between items-center text-slate-400 line-through text-sm">
@@ -230,13 +229,12 @@ export const CartDrawer: React.FC = () => {
                 </div>
 
                 {/* Main Finalize Button */}
-                {/* Added 'pr-24' to container to ensure chat bubble doesn't overlap button */}
                 <div className={`p-4 border-t pb-8 pr-24 ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-white border-slate-100'}`}>
                     <button 
                         className="w-full bg-slate-900 text-white font-bold py-4 px-6 rounded-xl shadow-lg flex justify-between items-center hover:bg-slate-800 transition-all active:scale-95"
                         onClick={() => { /* Finalize Logic */ }}
                     >
-                        <span>Finalize List</span>
+                        <span>Finalize Scouting List</span>
                         <span className="bg-slate-800 py-1 px-3 rounded-lg text-sm">${total.toLocaleString()}</span>
                     </button>
                 </div>
@@ -245,10 +243,9 @@ export const CartDrawer: React.FC = () => {
 
         {/* === COLLAPSED VIEW (Sticky Bar) === */}
         {!isOpen && (
-            <div className="p-4 w-full h-full flex items-start justify-center">
+            <div className="w-full h-full flex items-center px-4">
                 <div
                     onClick={() => setIsOpen(true)}
-                    // Added 'pr-24' here to protect the price from the chat bubble
                     className="w-full bg-slate-900 text-white flex justify-between items-center px-4 py-3 pr-24 rounded-2xl cursor-pointer shadow-lg hover:bg-slate-800 transition-colors"
                 >
                     <div className="flex items-center gap-3">
