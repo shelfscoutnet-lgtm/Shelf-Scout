@@ -242,7 +242,7 @@ export const CartDrawer: React.FC = () => {
                 <span className="font-semibold text-sm">View Basket</span>
                 
                 {/* Right: Price & Savings (Padded for Chatbot) */}
-                <div className="flex items-center font-bold mr-[60px]">
+                <div className="flex items-center font-bold mr-24">
                     <span>${total.toLocaleString()}</span>
                     {savings > 0 && (
                         <span className="ml-2 text-emerald-400 text-xs font-bold flex items-center">
