@@ -196,29 +196,29 @@ export const CartDrawer: React.FC = () => {
                 )}
             </div>
 
-            {/* Summary Footer with Potential Savings Hook */}
-            <div className={`p-6 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
-                 <div className="space-y-1 mb-4">
-                    <div className="flex justify-between items-center text-slate-400 line-through text-sm">
-                        <span>Subtotal (Max)</span>
-                        <span>${worstTotal.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm font-semibold">
-                        <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Price</span>
-                        <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
-                    </div>
-                    {savings > 0 && (
-                        <div className="flex justify-between items-center pt-2 mt-2 border-t border-emerald-500/10">
-                            <span className="text-emerald-500 font-bold flex items-center">
-                                <TrendingDown size={18} className="mr-1" /> Potential Savings
-                            </span>
-                            <span className="text-xl font-extrabold text-emerald-500">
-                                -${savings.toLocaleString()}
-                            </span>
-                        </div>
-                    )}
-                 </div>
-
+           {/* Summary Footer with Potential Savings Hook */}
+        <div className={`p-6 pr-24 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
+          <div className="space-y-1 mb-4">
+            <div className="flex justify-between items-center text-slate-400 line-through text-sm">
+              <span>Subtotal (Max)</span>
+              <span>${worstTotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm font-semibold">
+              <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Price</span>
+              <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
+            </div>
+          </div>
+          {savings > 0 && (
+            <div className="flex justify-between items-center pt-2 mt-2 border-t border-emerald-500/10">
+              <span className="text-emerald-500 font-bold flex items-center">
+                <TrendingDown size={18} className="mr-1" /> Potential Savings
+              </span>
+              <span className="text-xl font-extrabold text-emerald-500">
+                -${savings.toLocaleString()}
+              </span>
+            </div>
+          )}
+        </div>
                  <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-slate-800 transition-colors">
                      Complete Scouting List
                  </button>
@@ -229,28 +229,30 @@ export const CartDrawer: React.FC = () => {
       {/* Collapsed Sticky Bar (Floating above nav) */}
       {!isOpen && (
         <div className="px-4 pb-2 w-full">
-            <div 
-                onClick={() => setIsOpen(true)}
-                className="bg-slate-900 text-white flex justify-between items-center px-4 py-3 rounded-2xl cursor-pointer shadow-xl hover:bg-slate-800 transition-transform active:scale-95"
-            >
-                {/* Left: Item Count Circle */}
-                <div className="bg-emerald-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md">
-                    {cartItemCount}
-                </div>
-                
-                {/* Center: Label */}
-                <span className="font-semibold text-sm">View Basket</span>
-                
-                {/* Right: Price & Savings (Padded for Chatbot) */}
-                <div className="flex items-center font-bold mr-24">
-                    <span>${total.toLocaleString()}</span>
-                    {savings > 0 && (
-                        <span className="ml-2 text-emerald-400 text-xs font-bold flex items-center">
-                            <TrendingDown size={14} className="mr-0.5" />
-                            (-${savings.toLocaleString()})
-                        </span>
-                    )}
-                    <ChevronUp size={16} className="ml-1 text-slate-400"/>
+          <div
+            onClick={() => setIsOpen(true)}
+            className="bg-slate-900 text-white flex justify-between items-center px-4 py-3 pr-24 rounded-2xl cursor-pointer shadow-lg hover:bg-slate-800 transition-colors"
+          >
+            {/* Left: Item Count & Label */}
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md text-white">
+                {cartItemCount}
+              </div>
+              <span className="font-semibold text-sm">Review Order</span>
+            </div>
+
+            {/* Right: Price (Padded safely from Chatbot) */}
+            <div className="flex flex-col items-end">
+              <span className="font-bold text-lg">${total.toLocaleString()}</span>
+              {savings > 0 && (
+                <span className="text-emerald-400 text-[10px] font-bold">
+                  Saved ${savings.toLocaleString()}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
                 </div>
             </div>
         </div>
