@@ -51,7 +51,7 @@ export const CartDrawer: React.FC = () => {
   if (cart.length === 0) return null;
 
   return (
-    // FIX APPLIED HERE: Restored 'bottom-16' so it sits ABOVE the nav bar, not behind it.
+    // FIX 1: Kept 'bottom-16' so it sits ABOVE the nav bar.
     <div className={`fixed bottom-16 left-0 right-0 z-40 transition-all duration-300 ease-in-out ${isOpen ? 'h-[80vh]' : 'h-16'}`}>
       
       {/* Backdrop (Only visible when open) */}
@@ -203,7 +203,8 @@ export const CartDrawer: React.FC = () => {
                     )}
                 </div>
 
-                {/* Footer Section: Totals & Actions */}
+                {/* Footer Section: Totals */}
+                {/* FIX 2: Added 'pr-24' here. This pushes the 'Best Possible Price' text to the left of the chatbot. */}
                 <div className={`p-6 pr-24 border-t ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="space-y-1 mb-4">
                         <div className="flex justify-between items-center text-slate-400 line-through text-sm">
@@ -229,6 +230,7 @@ export const CartDrawer: React.FC = () => {
                 </div>
 
                 {/* Main Finalize Button */}
+                {/* FIX 3: Added 'pr-24' here. This pushes the button content left of the chatbot. */}
                 <div className={`p-4 border-t pb-8 pr-24 ${isDarkMode ? 'bg-teal-950 border-teal-900' : 'bg-white border-slate-100'}`}>
                     <button 
                         className="w-full bg-slate-900 text-white font-bold py-4 px-6 rounded-xl shadow-lg flex justify-between items-center hover:bg-slate-800 transition-all active:scale-95"
@@ -246,6 +248,7 @@ export const CartDrawer: React.FC = () => {
             <div className="w-full h-full flex items-center px-4">
                 <div
                     onClick={() => setIsOpen(true)}
+                    // FIX 4: Added 'pr-24' here. The sticky bar text will now stop before the chatbot.
                     className="w-full bg-slate-900 text-white flex justify-between items-center px-4 py-3 pr-24 rounded-2xl cursor-pointer shadow-lg hover:bg-slate-800 transition-colors"
                 >
                     <div className="flex items-center gap-3">
