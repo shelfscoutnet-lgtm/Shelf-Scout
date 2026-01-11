@@ -504,10 +504,7 @@ export const ActiveDashboard: React.FC = () => {
                                      {selectedCategory 
                                         ? `No products found in "${selectedCategory}".` 
                                         : "Inventory empty. Use the Import Tool in Profile."}
-                                 </p>
-                                 <div className="text-xs text-slate-400 mt-2">
-                                     Debug: Loaded 0 Products from Database
-                                 </div>
+                              
                                  {selectedCategory && (
                                      <button 
                                         onClick={() => setSelectedCategory(null)}
