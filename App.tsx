@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { ShopProvider } from './context/ShopContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ParishGuard } from './components/ParishGuard';
 import { BetaBanner } from './components/BetaBanner';
+import { LandingPage } from './components/LandingPage'; // Import the new Landing Page
 
 /**
  * Error Boundary component to catch rendering errors and prevent blank screens.
@@ -54,14 +55,22 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const App: React.FC = () => {
+  // State to track if the user has passed the landing page
+  const [hasEntered, setHasEntered] = useState(false);
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <ShopProvider>
-          <div className="flex flex-col min-h-screen">
-            <BetaBanner />
-            <ParishGuard />
-          </div>
+          {/* LOGIC CHECK: Show Landing Page first, then the App */}
+          {!hasEntered ? (
+            <LandingPage onEnter={() => setHasEntered(true)} />
+          ) : (
+            <div className="flex flex-col min-h-screen">
+              <BetaBanner />
+              <ParishGuard />
+            </div>
+          )}
         </ShopProvider>
       </ThemeProvider>
     </ErrorBoundary>
