@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronRight, TrendingDown, Users, Moon, Sun, MapPin, ArrowLeft, Camera, Upload, Check, ShoppingBag, Wallet, Award, Heart, Trash2, Bell, Loader2, Database, AlertCircle, Store as StoreIcon, Save, Zap, XCircle, LogOut, Mail, Lock, X, Minus, Plus, Utensils, ChefHat, Clock } from 'lucide-react';
+import { Search, ChevronRight, TrendingDown, Users, Moon, Sun, MapPin, ArrowLeft, Camera, Upload, Check, ShoppingBag, Wallet, Award, Heart, Trash2, Bell, Loader2, Database, AlertCircle, Store as StoreIcon, Save, Zap, XCircle, LogOut, Mail, Lock, X, Minus, Plus, Utensils, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
@@ -36,7 +36,6 @@ export const ActiveDashboard: React.FC = () => {
 
   const { isDarkMode, toggleTheme } = useTheme();
   
-  console.log("DEBUG LOCATION:", selectedLocation);
   const signupsData = useSignups(currentParish?.id);
   const signupCount = signupsData ? (signupsData.signupCount || 0) : 0;
   const submitSignup = signupsData ? signupsData.submitSignup : undefined;
@@ -582,9 +581,9 @@ export const ActiveDashboard: React.FC = () => {
         return (
             <div className={`min-h-screen pb-24 px-6 pt-12 flex flex-col items-center justify-center text-center ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
                 
-                {/* Hero Icon */}
+                {/* Hero Icon - Using Utensils to be Safe */}
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 ${isDarkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-500'}`}>
-                  <ChefHat size={48} />
+                  <Utensils size={48} />
                 </div>
           
                 {/* Main Text */}
@@ -616,9 +615,9 @@ export const ActiveDashboard: React.FC = () => {
                   </div>
                 </div>
           
-                {/* Beta Notice */}
+                {/* Dynamic Parish Notice */}
                 <div className={`text-xs px-6 py-3 rounded-full ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
-                  Recipe features coming to Portmore Beta soon.
+                  Recipe features coming to {currentParish?.name || 'your area'} soon.
                 </div>
             </div>
         );
