@@ -1,123 +1,116 @@
-import React, { useMemo } from 'react';
-import { Plus, Utensils } from 'lucide-react';
-import confetti from 'canvas-confetti';
-import { Product } from '../types';
+import React from 'react';
+import { Plus } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
-import { RECIPES } from '../config/recipes';
+
+interface Bundle {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  items: string[];
+  itemCount: number;
+  emoji: string;
+}
 
 interface Props {
-  products: Product[];
+  products?: any[]; // Optional prop if you eventually pass real products
 }
 
 export const ChefCorner: React.FC<Props> = ({ products }) => {
-  const { addMultipleToCart } = useShop();
+  const { addToCart, cart } = useShop();
   const { isDarkMode } = useTheme();
 
-  // Logic: For each keyword, find the product with the absolute lowest price variant
-  const findBestMatch = (keyword: string, allProducts: Product[]) => {
-    let best: { product: Product; storeId: string; price: number } | null = null;
+  // --- HARDCODED BUNDLES (Since they don't exist in DB yet) ---
+  const bundles: Bundle[] = [
+    {
+      id: 'bundle-survival',
+      name: 'Survival Kit',
+      // UPDATED: Using your live Supabase Storage Link
+      image: 'https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Products/bundle-survival-kit.jpeg',
+      price: 440.17,
+      items: ['Grace Corned Beef (12oz)', 'Lasco Water Crackers (300g)'],
+      itemCount: 2,
+      emoji: '🛠️'
+    },
+    {
+      id: 'bundle-easter',
+      name: 'Easter Preview',
+      // UPDATED: Using your live Supabase Storage Link
+      image: 'https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Products/bundle-easter-preview.jpeg',
+      price: 534.08,
+      items: ['Tastee Cheese (2.2lb Tin)', 'Holsum Spice Bun (125g)'],
+      itemCount: 2,
+      emoji: '🧀'
+    }
+  ];
 
-    allProducts.forEach((p) => {
-      const isMatch = p.name.toLowerCase().includes(keyword.toLowerCase()) || 
-                      p.category.toLowerCase().includes(keyword.toLowerCase());
-      
-      if (isMatch) {
-        Object.entries(p.prices).forEach(([sId, price]) => {
-          if (!best || price < best.price) {
-            best = { product: p, storeId: sId, price: Number(price) };
-          }
-        });
-      }
-    });
-    return best;
+  const handleAddBundle = (bundle: Bundle) => {
+    // 1. Create a "fake" product object for the cart
+    const bundleProduct = {
+      id: bundle.id,
+      name: bundle.name,
+      image_url: bundle.image, // Ensure this matches your Cart's expected field
+      prices: { 'default': bundle.price }, // Mock price structure
+      category: 'Bundle'
+    };
+
+    // 2. Add it to the cart
+    // Note: Since 'addToCart' expects a specific Product type, we might need to cast it
+    // or ensure your Context handles custom items. For now, we mock the structure.
+    addToCart(bundleProduct as any);
   };
-
-  // Build the bundles that have ALL items available
-  const activeBundles = useMemo(() => {
-    if (!products || products.length === 0) return [];
-
-    return RECIPES.map((recipe) => {
-      const matches: { product: Product; storeId: string; price: number }[] = [];
-      let allFound = true;
-
-      for (const keyword of recipe.keywords) {
-        const match = findBestMatch(keyword, products);
-        if (match) {
-          matches.push(match);
-        } else {
-          allFound = false;
-          break;
-        }
-      }
-
-      if (!allFound) return null;
-
-      const totalPrice = matches.reduce((sum, m) => sum + m.price, 0);
-      return { ...recipe, matches, totalPrice };
-    }).filter(Boolean);
-  }, [products]);
-
-  const handleAddBundle = (bundle: any) => {
-    addMultipleToCart(
-      bundle.matches.map((m: any) => ({ product: m.product, storeId: m.storeId }))
-    );
-
-    // Confetti celebration
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#10B981', '#34D399', '#FCD34D']
-    });
-  };
-
-  if (activeBundles.length === 0) return null;
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className={`font-bold flex items-center ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-          <Utensils size={18} className="mr-2 text-emerald-500" />
-          Chef's Corner
-          <span className="ml-2 text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-            Quick Add Bundles
-          </span>
-        </h3>
+    <div className="mb-8 animate-fade-in">
+      <div className="flex items-center gap-2 mb-4 px-4">
+        <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+          👨‍🍳 Chef's Corner
+        </h2>
+        <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          Quick Add Bundles
+        </span>
       </div>
-      
-      <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4">
-        {activeBundles.map((bundle: any) => (
-          <div 
-            key={bundle.id} 
+
+      <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 px-4">
+        {bundles.map((bundle) => (
+          <div
+            key={bundle.id}
+            // UPDATED THEME: Switched from 'bg-teal-900' to 'bg-slate-800' for a cleaner look
             className={`min-w-[280px] max-w-[280px] rounded-2xl p-3 border shadow-sm flex flex-col relative ${
-              isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'
+              isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'
             }`}
           >
-            <div className="h-32 rounded-xl overflow-hidden mb-3 relative">
-              <img src={bundle.image} alt={bundle.name} className="w-full h-full object-cover" />
-              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-full font-bold">
-                {bundle.matches.length} items
+            {/* Image Container */}
+            <div className="h-32 rounded-xl overflow-hidden mb-3 relative group">
+              <img 
+                src={bundle.image} 
+                alt={bundle.name} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+              />
+              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg">
+                {bundle.itemCount} Items
               </div>
             </div>
-            
+
+            {/* Content */}
             <div className="flex-1 mb-3">
               <h4 className={`font-bold text-sm mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                 {bundle.emoji} {bundle.name}
               </h4>
-              <p className={`text-[10px] mb-2 leading-relaxed ${isDarkMode ? 'text-teal-200' : 'text-slate-500'}`}>
+              <p className={`text-[10px] mb-2 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 <span className="font-bold opacity-80">Includes: </span>
-                {bundle.matches.map((m: any) => m.product.name).join(', ')}
+                {bundle.items.join(', ')}
               </p>
             </div>
 
-            <button 
+            {/* Add Button */}
+            <button
               onClick={() => handleAddBundle(bundle)}
-              className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 ${
-                isDarkMode ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-md'
-              }`}
+              className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-slate-900/10"
             >
-              <Plus size={14} /> Add Bundle (${bundle.totalPrice.toLocaleString()})
+              <Plus size={16} />
+              Add Bundle (${bundle.price.toLocaleString()})
             </button>
           </div>
         ))}
