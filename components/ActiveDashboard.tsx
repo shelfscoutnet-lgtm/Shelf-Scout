@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronRight, TrendingDown, Users, Moon, Sun, MapPin, ArrowLeft, Camera, Upload, Check, ShoppingBag, Wallet, Award, Heart, Trash2, Bell, Loader2, Database, AlertCircle, Store as StoreIcon, Save, Zap, XCircle, LogOut, Mail, Lock, X, Minus, Plus, Utensils } from 'lucide-react';
+import { Search, ChevronRight, TrendingDown, Users, Moon, Sun, MapPin, ArrowLeft, Camera, Upload, Check, ShoppingBag, Wallet, Award, Heart, Trash2, Bell, Loader2, Database, AlertCircle, Store as StoreIcon, Save, Zap, XCircle, LogOut, Mail, Lock, X, Minus, Plus, Utensils, ChefHat, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
@@ -147,34 +147,6 @@ export const ActiveDashboard: React.FC = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (loginInput.trim()) {
-          const email = loginInput.trim().toLowerCase();
-          setUserEmail(email);
-          localStorage.setItem('shelf_scout_user_email', email);
-          setLoginInput('');
-      }
-  };
-
-  const handleLogout = () => {
-      setUserEmail(null);
-      localStorage.removeItem('shelf_scout_user_email');
-      setIsAdminUnlocked(false);
-      setAdminPasswordInput('');
-      setUnlockError('');
-  };
-
-  const handleAdminUnlock = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (adminPasswordInput === 'YAWEH04953C57S') {
-          setIsAdminUnlocked(true);
-          setUnlockError('');
-      } else {
-          setUnlockError('Invalid Admin Credentials');
-      }
   };
 
   const handleActiveSignup = async (e: React.FormEvent) => {
@@ -338,6 +310,7 @@ export const ActiveDashboard: React.FC = () => {
   }
 
   const renderContent = () => {
+    // --- HOME TAB ---
     if (activeTab === 'home') {
         return (
             <div className="pb-24 relative">
@@ -479,7 +452,7 @@ export const ActiveDashboard: React.FC = () => {
                                 </div>
          <div className="mt-10 py-6 border-t border-slate-200 text-center">
           <div className="flex justify-center space-x-6 text-sm text-slate-500">
-            {/* Privacy Policy Button (Corrected) */}
+            {/* Privacy Policy Button */}
             <button 
               className="hover:text-emerald-600 transition-colors" 
               onClick={() => setShowPrivacy(true)}
@@ -510,7 +483,7 @@ export const ActiveDashboard: React.FC = () => {
                                         onClick={() => setSelectedCategory(null)}
                                         className="mt-2 text-xs font-bold text-emerald-500"
                                      >
-                                         Clear Filter
+                                          Clear Filter
                                      </button>
                                  )}
                             </div>
@@ -521,6 +494,7 @@ export const ActiveDashboard: React.FC = () => {
         );
     }
     
+    // --- CART TAB ---
     if (activeTab === 'cart') {
         return (
             <div className="p-4 pb-24 min-h-screen flex flex-col">
@@ -603,201 +577,51 @@ export const ActiveDashboard: React.FC = () => {
         )
     }
 
+    // --- RECIPES / KITCHEN TAB (Replaces Profile) ---
     if (activeTab === 'profile') {
-        const isAdmin = userEmail && userEmail.endsWith('@shelfscoutja.com');
-
         return (
-            <div className="p-4 pb-24 min-h-screen">
-                {renderHeader()}
-                <div className="max-w-lg mx-auto">
-                    
-                    {!userEmail ? (
-                        <div className={`p-6 rounded-2xl mb-6 border shadow-sm ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                            <h2 className={`font-bold text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Sign In</h2>
-                            <p className={`text-sm mb-4 ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-                                Enter your email to access your saved items and preferences.
-                            </p>
-                            <form onSubmit={handleLogin} className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input 
-                                        type="email" 
-                                        value={loginInput}
-                                        onChange={(e) => setLoginInput(e.target.value)}
-                                        placeholder="you@example.com"
-                                        className={`w-full pl-9 pr-3 py-2 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-950 border-teal-800 text-white' : 'bg-slate-50 border-slate-200'}`}
-                                        required
-                                    />
-                                </div>
-                                <button 
-                                    type="submit"
-                                    className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm"
-                                >
-                                    Login
-                                </button>
-                            </form>
-                        </div>
-                    ) : (
-                        <div className={`p-6 rounded-2xl mb-6 flex items-center justify-between ${isDarkMode ? 'bg-teal-900' : 'bg-white shadow-sm border border-slate-100'}`}>
-                             <div className="flex items-center space-x-4">
-                                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl ${
-                                    isAdmin ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-600'
-                                }`}>
-                                    {userEmail.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                    <div className="flex items-center">
-                                        <h2 className={`font-bold text-sm mr-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                            {userEmail.split('@')[0]}
-                                        </h2>
-                                        {isAdmin && (
-                                            <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-bold flex items-center">
-                                                <Check size={8} className="mr-0.5" /> Admin
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>{userEmail}</div>
-                                </div>
-                             </div>
-                             <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 p-2">
-                                 <LogOut size={18} />
-                             </button>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className={`p-4 rounded-2xl ${isDarkMode ? 'bg-teal-900' : 'bg-slate-900 text-white'}`}>
-                            <div className="flex items-center text-xs opacity-80 mb-1">
-                                <Wallet size={12} className="mr-1" /> Potential Savings
-                            </div>
-                            <div className="text-2xl font-bold text-emerald-400">
-                                ${savings.toLocaleString()}
-                            </div>
-                            <div className="text-[10px] opacity-60">in current cart</div>
-                        </div>
-                        <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                             <div className={`flex items-center text-xs mb-1 ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-                                <Award size={12} className="mr-1" /> Scout Score
-                            </div>
-                            <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                125
-                            </div>
-                            <div className={`text-[10px] ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Top 10% in Parish</div>
-                        </div>
-                    </div>
-
-                    {isAdmin && (
-                        !isAdminUnlocked ? (
-                            <div className={`p-6 rounded-2xl mb-6 border shadow-sm ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                                <div className="flex items-center mb-4">
-                                    <div className={`p-2 rounded-lg mr-3 ${isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
-                                        <Lock size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Security Check</h3>
-                                        <p className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>Restricted Access</p>
-                                    </div>
-                                </div>
-                                
-                                <form onSubmit={handleAdminUnlock}>
-                                    <div className="mb-3">
-                                        <input 
-                                            type="password" 
-                                            value={adminPasswordInput}
-                                            onChange={(e) => setAdminPasswordInput(e.target.value)}
-                                            placeholder="Enter Admin Password"
-                                            className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-amber-500 ${isDarkMode ? 'bg-teal-950 border-teal-800 text-white' : 'bg-slate-50 border-slate-200'}`}
-                                        />
-                                    </div>
-                                    
-                                    {unlockError && (
-                                        <div className="flex items-center text-xs text-red-500 font-bold mb-3 bg-red-500/10 p-2 rounded-lg">
-                                            <AlertCircle size={12} className="mr-1.5 flex-shrink-0" />
-                                            {unlockError}
-                                        </div>
-                                    )}
-                                    
-                                    <button 
-                                        type="submit"
-                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-sm"
-                                    >
-                                        Unlock Dashboard
-                                    </button>
-                                </form>
-                            </div>
-                        ) : (
-                            <div className="mb-6 animate-fade-in">
-                                <h3 className={`font-bold text-xs uppercase tracking-wide mb-3 ${isDarkMode ? 'text-teal-500' : 'text-slate-400'}`}>Admin Controls</h3>
-                                <button 
-                                    onClick={() => setShowAdminUpload(true)}
-                                    className={`w-full p-4 mb-3 rounded-2xl border flex items-center justify-between transition-colors ${
-                                        isDarkMode ? 'bg-teal-900 border-teal-800 hover:bg-teal-800' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        <div className={`p-2 rounded-lg mr-3 ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-200 text-emerald-800'}`}>
-                                            <Save size={18} />
-                                        </div>
-                                        <div className="text-left">
-                                            <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Admin Price Uploader</h3>
-                                            <p className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-emerald-700'}`}>Upload CSV prices</p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight size={16} className={isDarkMode ? 'text-teal-600' : 'text-slate-400'} />
-                                </button>
-
-                                <button 
-                                    onClick={() => setShowImportPage(true)}
-                                    className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-colors ${
-                                        isDarkMode ? 'bg-teal-900 border-teal-800 hover:bg-teal-800' : 'bg-white border-slate-100 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        <div className={`p-2 rounded-lg mr-3 ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
-                                            <Database size={18} />
-                                        </div>
-                                        <div className="text-left">
-                                            <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Product Import Tool</h3>
-                                            <p className={`text-xs ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>Upload inventory CSV</p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight size={16} className={isDarkMode ? 'text-teal-600' : 'text-slate-300'} />
-                                </button>
-                            </div>
-                        )
-                    )}
-                    
-                    {savedProducts.length > 0 && (
-                        <div className="mb-6">
-                            <h3 className={`font-bold text-lg mb-3 flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                <Heart size={18} className="mr-2 text-rose-500" fill="currentColor" /> Saved for Later
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                {savedProducts.map(p => (
-                                    <div key={p.id} className={`p-3 rounded-xl border flex items-center justify-between ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
-                                        <div className="flex items-center space-x-3 overflow-hidden">
-                                            <div className="w-10 h-10 bg-white rounded-lg p-1 flex-shrink-0">
-                                                <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
-                                            </div>
-                                            <div className="truncate">
-                                                <div className={`text-xs font-bold truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{p.name}</div>
-                                                <div className={`text-[10px] ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>{p.unit}</div>
-                                            </div>
-                                        </div>
-                                        <button 
-                                            onClick={() => removeSavedItem(p.id)}
-                                            className="text-slate-400 hover:text-rose-500 transition-colors p-2"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+            <div className={`min-h-screen pb-24 px-6 pt-12 flex flex-col items-center justify-center text-center ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+                
+                {/* Hero Icon */}
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 ${isDarkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-500'}`}>
+                  <ChefHat size={48} />
+                </div>
+          
+                {/* Main Text */}
+                <h1 className="text-3xl font-bold mb-4">The Shelf Scout Kitchen</h1>
+                <p className={`text-lg mb-8 max-w-xs mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  We're cooking up something special! Soon you'll be able to turn your grocery list into delicious Jamaican meals.
+                </p>
+          
+                {/* Feature Preview Cards */}
+                <div className="w-full max-w-sm space-y-4 mb-10">
+                  <div className={`p-4 rounded-xl flex items-center text-left ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
+                      <div className="p-2 bg-orange-100 text-orange-600 rounded-lg mr-4">
+                          <Utensils size={20} />
+                      </div>
+                      <div>
+                          <h3 className="font-bold text-sm">Budget Meals</h3>
+                          <p className="text-xs text-slate-500">Recipes tailored to current store deals.</p>
+                      </div>
+                  </div>
+          
+                  <div className={`p-4 rounded-xl flex items-center text-left ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
+                      <div className="p-2 bg-blue-100 text-blue-600 rounded-lg mr-4">
+                          <Clock size={20} />
+                      </div>
+                      <div>
+                          <h3 className="font-bold text-sm">Quick Fixes</h3>
+                          <p className="text-xs text-slate-500">Dinner on the table in under 30 mins.</p>
+                      </div>
+                  </div>
+                </div>
+          
+                {/* Beta Notice */}
+                <div className={`text-xs px-6 py-3 rounded-full ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
+                  Recipe features coming to Portmore Beta soon.
                 </div>
             </div>
-        )
+        );
     }
 
     if (activeTab === 'search') {
@@ -862,7 +686,7 @@ export const ActiveDashboard: React.FC = () => {
             </div>
         );
     }
-
+    
     return (
         <div className="min-h-screen flex items-center justify-center">
             <Loader2 className="animate-spin text-emerald-500" size={32} />
