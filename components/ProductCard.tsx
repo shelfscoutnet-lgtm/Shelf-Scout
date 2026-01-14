@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Share2, Heart, Store as StoreIcon, AlertCircle } from 'lucide-react';
+import { Plus, Heart, Store as StoreIcon, AlertCircle } from 'lucide-react';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
@@ -15,28 +15,28 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
 
   // --- METICULOUS DATA LOGIC ---
   
-  // 1. Identify valid stores strictly within the Current Parish
-  const parishStores = useMemo(() => {
+  // 1. Identify stores specifically in the current parish
+  const localStores = useMemo(() => {
     if (!currentParish) return [];
     return stores.filter(store => store.parish_id === currentParish.id);
   }, [stores, currentParish]);
 
-  // 2. Calculate Availability & Pricing based ONLY on Parish Stores
-  const { displayPrice, availableStoreCount, isAvailableInParish } = useMemo(() => {
-    // Get all prices for this product specifically from stores in the current parish
-    const localPrices = parishStores
+  // 2. Calculate Pricing & Availability for this specific parish
+  const { localPrice, localStoreCount, hasLocalPrice } = useMemo(() => {
+    // Find prices only from stores in this parish
+    const pricesInParish = localStores
       .map(store => product.prices[store.id])
-      .filter((price): price is number => typeof price === 'number');
+      .filter((p): p is number => typeof p === 'number');
 
-    const count = localPrices.length;
-    const lowest = count > 0 ? Math.min(...localPrices) : 0;
+    const count = pricesInParish.length;
+    const lowest = count > 0 ? Math.min(...pricesInParish) : 0;
 
     return {
-      displayPrice: lowest,
-      availableStoreCount: count,
-      isAvailableInParish: count > 0
+      localPrice: lowest,
+      localStoreCount: count,
+      hasLocalPrice: count > 0
     };
-  }, [parishStores, product.prices]);
+  }, [localStores, product.prices]);
 
   // --- INTERACTION ---
   const handleAdd = (e: React.MouseEvent) => {
@@ -53,31 +53,32 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
           : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
       }`}
     >
-      {/* 1. IMAGE CONTAINER - Fixed Height (h-40) */}
+      {/* 1. IMAGE CONTAINER - Full Color, Never Grayscale */}
       <div className="h-40 w-full relative p-4 flex items-center justify-center bg-white border-b border-slate-100/10">
         <img 
           src={product.image_url} 
           alt={product.name} 
-          className={`h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110 ${!isAvailableInParish ? 'grayscale opacity-60' : ''}`}
+          className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
         />
         
-        {/* Availability Badge */}
-        {isAvailableInParish ? (
-          availableStoreCount > 1 && (
+        {/* Availability Badge - Top Left */}
+        {hasLocalPrice ? (
+          localStoreCount > 1 && (
             <div className="absolute top-2 left-2 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
               <StoreIcon size={10} className="mr-1 text-emerald-400" />
-              {availableStoreCount} Stores
+              {localStoreCount} Stores
             </div>
           )
         ) : (
-          <div className="absolute top-2 left-2 bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
+          // BANNER: "No Prices Collected Yet" - Instead of graying out
+          <div className="absolute top-2 left-2 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
             <AlertCircle size={10} className="mr-1" />
-            N/A in {currentParish?.name}
+            No Price in {currentParish?.name}
           </div>
         )}
 
-        {/* Heart Icon */}
+        {/* Heart Icon - Top Right */}
         <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
            <button className="p-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 shadow-sm">
              <Heart size={14} />
@@ -107,24 +108,27 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
         <div className="flex items-center justify-between mt-auto pt-2">
           <div className="flex flex-col">
             <span className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              {isAvailableInParish ? 'From' : 'Status'}
+              {hasLocalPrice ? 'Best Local Price' : 'Status'}
             </span>
-            <span className={`font-extrabold text-lg leading-none ${
-              isAvailableInParish ? 'text-emerald-500' : (isDarkMode ? 'text-slate-600' : 'text-slate-300')
-            }`}>
-              {isAvailableInParish ? `$${displayPrice.toLocaleString()}` : 'No Data'}
-            </span>
+            
+            {/* Price Display Logic */}
+            {hasLocalPrice ? (
+              <span className="font-extrabold text-lg text-emerald-500 leading-none">
+                ${localPrice.toLocaleString()}
+              </span>
+            ) : (
+              <span className={`text-sm font-bold leading-none ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                Scout Needed
+              </span>
+            )}
           </div>
 
           <button 
             onClick={handleAdd}
-            disabled={!isAvailableInParish}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${
-              isAvailableInParish
-                ? (isDarkMode 
-                    ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20' 
-                    : 'bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20')
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              isDarkMode 
+                ? 'bg-slate-800 text-white hover:bg-emerald-600 shadow-slate-900/20' 
+                : 'bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20'
             }`}
           >
             <Plus size={18} strokeWidth={3} />
