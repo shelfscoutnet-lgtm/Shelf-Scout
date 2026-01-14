@@ -222,13 +222,13 @@ export const ActiveDashboard: React.FC = () => {
           <div className="flex justify-between items-center mb-4 pt-4 px-4">
               <button 
                 onClick={() => setActiveTab('home')}
-                className={`flex items-center text-sm font-semibold ${isDarkMode ? 'text-teal-200 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`flex items-center text-sm font-semibold ${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
               >
                   <ArrowLeft size={18} className="mr-1" /> Back to Home
               </button>
               <button 
                   onClick={toggleTheme} 
-                  className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-teal-800 text-teal-200' : 'bg-slate-100 text-slate-600'}`}
+                  className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'}`}
               >
                   {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
@@ -253,7 +253,7 @@ export const ActiveDashboard: React.FC = () => {
                 <div className="flex items-center space-x-2">
                     <button 
                         onClick={toggleTheme} 
-                        className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-teal-800 text-teal-200' : 'bg-slate-100 text-slate-600'}`}
+                        className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'}`}
                     >
                         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
                     </button>
@@ -264,12 +264,12 @@ export const ActiveDashboard: React.FC = () => {
                 <div className="flex items-center">
                     <button 
                         onClick={resetParish}
-                        className={`p-2 mr-3 rounded-full border transition-colors ${isDarkMode ? 'bg-teal-900 border-teal-800 text-teal-200 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'}`}
+                        className={`p-2 mr-3 rounded-full border transition-colors ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'}`}
                     >
                         <ArrowLeft size={16} />
                     </button>
                     <div>
-                        <div className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>Current Parish</div>
+                        <div className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>Current Parish</div>
                         <div className={`font-bold text-lg flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                             <MapPin size={16} className="mr-1 text-emerald-500" />
                             {currentParish?.name}
@@ -278,10 +278,10 @@ export const ActiveDashboard: React.FC = () => {
                 </div>
             </div>
 
-            <div className={`p-3 rounded-xl border flex items-center ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <StoreIcon size={16} className={`mr-3 ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`} />
+            <div className={`p-3 rounded-xl border flex items-center ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <StoreIcon size={16} className={`mr-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`} />
                 <div className="flex-1">
-                    <label className={`block text-[10px] font-bold uppercase ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>City / Area</label>
+                    <label className={`block text-[10px] font-bold uppercase ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>City / Area</label>
                     <select 
                         value={selectedLocation}
                         onChange={(e) => setSelectedLocation(e.target.value)}
@@ -318,7 +318,7 @@ export const ActiveDashboard: React.FC = () => {
                 <div className="px-4 mb-6">
                     <div 
                         onClick={() => setShowSignupModal(true)}
-                        className={`rounded-xl p-4 border relative overflow-hidden cursor-pointer transition-transform active:scale-[0.98] ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-slate-900 border-slate-800'}`}
+                        className={`rounded-xl p-4 border relative overflow-hidden cursor-pointer transition-transform active:scale-[0.98] ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-900 border-slate-800'}`}
                     >
                          <div className="flex justify-between items-end mb-2 relative z-10">
                              <div>
@@ -370,7 +370,7 @@ export const ActiveDashboard: React.FC = () => {
                         </div>
                     )}
 
-                    <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden ${isDarkMode ? 'bg-teal-950' : 'bg-slate-50 border border-slate-100'}`}>
+                    <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden ${isDarkMode ? 'bg-slate-950 border border-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
                         <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
                         <div className="relative z-10">
                             <h2 className={`font-bold text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Welcome to {currentParish?.name}</h2>
@@ -413,11 +413,11 @@ export const ActiveDashboard: React.FC = () => {
                                         className={`flex flex-col items-center justify-center p-3 rounded-xl border shadow-sm transition-all duration-200 ${
                                             isActive 
                                             ? 'bg-emerald-500 border-emerald-600 text-white transform scale-105 ring-2 ring-emerald-200' 
-                                            : (isDarkMode ? 'bg-teal-900 border-teal-800 hover:border-emerald-500' : 'bg-white border-slate-100 hover:border-emerald-200')
+                                            : (isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-emerald-500' : 'bg-white border-slate-100 hover:border-emerald-200')
                                         }`}
                                     >
                                         <span className="text-2xl mb-1">{cat.emoji}</span>
-                                        <span className={`text-[10px] font-medium ${isActive ? 'text-white' : (isDarkMode ? 'text-teal-200' : 'text-slate-600')}`}>{cat.name}</span>
+                                        <span className={`text-[10px] font-medium ${isActive ? 'text-white' : (isDarkMode ? 'text-slate-200' : 'text-slate-600')}`}>{cat.name}</span>
                                     </button>
                                 );
                             })}
@@ -471,8 +471,8 @@ export const ActiveDashboard: React.FC = () => {
         </div>
                             </>
                         ) : (
-                            <div className={`text-center py-8 border-2 border-dashed rounded-xl ${isDarkMode ? 'border-teal-800' : 'border-slate-200'}`}>
-                                 <p className={`text-sm ${isDarkMode ? 'text-teal-400' : 'text-slate-400'}`}>
+                            <div className={`text-center py-8 border-2 border-dashed rounded-xl ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                                 <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>
                                      {selectedCategory 
                                         ? `No products found in "${selectedCategory}".` 
                                         : "Inventory empty. Use the Import Tool in Profile."}
@@ -501,11 +501,11 @@ export const ActiveDashboard: React.FC = () => {
                 {cart.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
                         <div className="text-center max-w-xs">
-                            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isDarkMode ? 'bg-teal-900' : 'bg-slate-100'}`}>
+                            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
                                 <ShoppingBag className="text-slate-300" size={32} />
                             </div>
                             <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Your Basket is Empty</h2>
-                            <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>Add items to your scout list to compare prices across local stores.</p>
+                            <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Add items to your scout list to compare prices across local stores.</p>
                             <button 
                                 onClick={() => setActiveTab('home')}
                                 className="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold w-full shadow-lg hover:bg-emerald-500"
@@ -521,7 +521,7 @@ export const ActiveDashboard: React.FC = () => {
                                 const itemStoreId = item.selectedStoreId || primaryStore?.id;
                                 const unitPrice = itemStoreId ? item.prices[itemStoreId] || 0 : 0;
                                 return (
-                                    <div key={item.id} className={`flex items-center p-3 rounded-xl border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                    <div key={item.id} className={`flex items-center p-3 rounded-xl border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                                         <div className="w-16 h-16 rounded-lg bg-white p-1 mr-4 flex-shrink-0">
                                             <img src={item.image_url} className="h-full w-full object-contain mix-blend-multiply" alt=""/>
                                         </div>
@@ -547,13 +547,13 @@ export const ActiveDashboard: React.FC = () => {
                         </div>
                         
                         {/* Summary Section */}
-                        <div className={`mt-6 p-6 rounded-2xl border-t-4 border-emerald-500 ${isDarkMode ? 'bg-teal-900' : 'bg-white shadow-xl'}`}>
+                        <div className={`mt-6 p-6 rounded-2xl border-t-4 border-emerald-500 ${isDarkMode ? 'bg-slate-900' : 'bg-white shadow-xl'}`}>
                              <div className="flex justify-between items-center mb-1 text-slate-400 line-through text-sm">
                                  <span>Worst Total</span>
                                  <span>${worstTotal.toLocaleString()}</span>
                              </div>
                              <div className="flex justify-between items-center mb-1 text-sm font-semibold">
-                                 <span className={isDarkMode ? 'text-teal-300' : 'text-slate-600'}>Best Possible Total</span>
+                                 <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>Best Possible Total</span>
                                  <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>${bestTotal.toLocaleString()}</span>
                              </div>
                              {savings > 0 && (
@@ -579,7 +579,7 @@ export const ActiveDashboard: React.FC = () => {
     // --- RECIPES / KITCHEN TAB (Replaces Profile) ---
     if (activeTab === 'profile') {
         return (
-            <div className={`min-h-screen pb-24 px-6 pt-12 flex flex-col items-center justify-center text-center ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+            <div className={`min-h-screen pb-24 px-6 pt-12 flex flex-col items-center justify-center text-center ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
                 
                 {/* Hero Icon - Using Utensils to be Safe */}
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 ${isDarkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-500'}`}>
@@ -594,7 +594,7 @@ export const ActiveDashboard: React.FC = () => {
           
                 {/* Feature Preview Cards */}
                 <div className="w-full max-w-sm space-y-4 mb-10">
-                  <div className={`p-4 rounded-xl flex items-center text-left ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
+                  <div className={`p-4 rounded-xl flex items-center text-left ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
                       <div className="p-2 bg-orange-100 text-orange-600 rounded-lg mr-4">
                           <Utensils size={20} />
                       </div>
@@ -604,7 +604,7 @@ export const ActiveDashboard: React.FC = () => {
                       </div>
                   </div>
           
-                  <div className={`p-4 rounded-xl flex items-center text-left ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
+                  <div className={`p-4 rounded-xl flex items-center text-left ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
                       <div className="p-2 bg-blue-100 text-blue-600 rounded-lg mr-4">
                           <Clock size={20} />
                       </div>
@@ -616,7 +616,7 @@ export const ActiveDashboard: React.FC = () => {
                 </div>
           
                 {/* Dynamic Parish Notice */}
-                <div className={`text-xs px-6 py-3 rounded-full ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
+                <div className={`text-xs px-6 py-3 rounded-full ${isDarkMode ? 'bg-slate-900 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
                   Recipe features coming to {currentParish?.name || 'your area'} soon.
                 </div>
             </div>
@@ -627,13 +627,13 @@ export const ActiveDashboard: React.FC = () => {
         return (
             <div className="p-4 pb-24 min-h-screen">
                 {renderHeader()}
-                <div className={`sticky top-0 z-20 pb-4 pt-2 ${isDarkMode ? 'bg-teal-950' : 'bg-[#f8fafc]'}`}>
+                <div className={`sticky top-0 z-20 pb-4 pt-2 ${isDarkMode ? 'bg-slate-950' : 'bg-[#f8fafc]'}`}>
                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input 
                           type="text" 
                           placeholder="Search products..."
-                          className={`w-full border rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm ${isDarkMode ? 'bg-teal-900 border-teal-800 text-white placeholder-teal-600' : 'bg-white border-slate-200'}`}
+                          className={`w-full border rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white placeholder-slate-600' : 'bg-white border-slate-200'}`}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           autoFocus
@@ -641,247 +641,4 @@ export const ActiveDashboard: React.FC = () => {
                       </div>
                       
                       <div className="flex space-x-2 overflow-x-auto hide-scrollbar mt-4">
-                        {['All', 'Sunday Dinner', 'Survival', 'Pantry'].map((tag, i) => (
-                            <button 
-                                key={tag}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${i === 0 ? 'bg-emerald-600 text-white' : (isDarkMode ? 'bg-teal-900 border border-teal-800 text-teal-200' : 'bg-white border-slate-200 text-slate-600')}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                
-                {!isLoadingProducts && (!products || products.length === 0) && !productsError && (
-                    <div className={`mt-8 p-6 rounded-2xl text-center ${isDarkMode ? 'bg-teal-900/30' : 'bg-emerald-50'}`}>
-                         <div className="bg-emerald-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                             <Database className="text-emerald-600" size={24} />
-                         </div>
-                         <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Connected to Supabase!</h3>
-                         <p className={`text-sm mt-1 ${isDarkMode ? 'text-teal-300' : 'text-slate-600'}`}>No products found yet.</p>
-                         <button 
-                            onClick={() => setShowImportPage(true)}
-                            className="mt-4 text-xs font-bold text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-full shadow-sm"
-                         >
-                             Import Data Now
-                         </button>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {filteredProducts.map(product => (
-                        <ProductCard 
-                            key={product.id} 
-                            product={product} 
-                            onClick={() => handleProductClick(product)}
-                        />
-                    ))}
-                </div>
-                {filteredProducts.length === 0 && products && products.length > 0 && (
-                    <div className="text-center mt-20 text-slate-400">
-                        <p>No items found matching "{searchTerm}".</p>
-                    </div>
-                )}
-            </div>
-        );
-    }
-    
-    return (
-        <div className="min-h-screen flex items-center justify-center">
-            <Loader2 className="animate-spin text-emerald-500" size={32} />
-        </div>
-    );
-  };
-
-  return (
-    <>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className={`min-h-screen ${isDarkMode ? 'bg-teal-950 text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
-        {renderContent()}
-      </div>
-
-      {showSignupModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className={`w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden ${isDarkMode ? 'bg-teal-950 border border-teal-800' : 'bg-white'}`}>
-                 <div className="h-24 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center relative overflow-hidden">
-                     <div className="absolute inset-0 bg-white/10 opacity-50 backdrop-blur-3xl"></div>
-                     <Zap size={48} className="text-white relative z-10 drop-shadow-lg" fill="currentColor" />
-                     <button 
-                        onClick={() => setShowSignupModal(false)}
-                        className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-black/20 hover:bg-black/30 backdrop-blur-md"
-                     >
-                         <X size={20} />
-                     </button>
-                 </div>
-
-                 <div className="p-8">
-                     <div className="text-center mb-6">
-                         <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Join the Movement</h2>
-                         <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-                             Help us grow! Join the Shelf Scout community for updates and exclusive deals in <span className="font-bold text-emerald-500">{currentParish?.name}</span>.
-                         </p>
-                     </div>
-
-                     <form onSubmit={handleActiveSignup} className="space-y-4">
-                         <div>
-                             <input 
-                                 type="text" 
-                                 value={signupName}
-                                 onChange={(e) => setSignupName(e.target.value)}
-                                 placeholder="Your Name"
-                                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-900 border-teal-800 text-white placeholder-teal-600' : 'border-slate-200 bg-slate-50'}`}
-                                 required
-                             />
-                         </div>
-                         <div>
-                             <input 
-                                 type="email" 
-                                 value={signupEmail}
-                                 onChange={(e) => setSignupEmail(e.target.value)}
-                                 placeholder="Email Address"
-                                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'bg-teal-900 border-teal-800 text-white placeholder-teal-600' : 'border-slate-200 bg-slate-50'}`}
-                                 required
-                             />
-                         </div>
-
-                         <button 
-                            type="submit"
-                            disabled={isSigningUp}
-                            className="w-full bg-slate-900 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-[1.02]"
-                         >
-                             {isSigningUp ? 'Joining...' : 'Count Me In! 🎉'}
-                         </button>
-                     </form>
-                     <p className="text-center text-[10px] text-slate-400 mt-4">
-                         No spam. Just savings.
-                     </p>
-                 </div>
-            </div>
-        </div>
-      )}
-      {/* Privacy Policy Modal - REAL DPA TEXT */}
-      {showPrivacy && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl relative">
-            
-            {/* Close Button (Top Right) */}
-            <button 
-              onClick={() => setShowPrivacy(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-bold mb-2 text-slate-800">Privacy Policy for Shelf Scout</h2>
-            <p className="text-sm text-slate-500 mb-6 italic border-b pb-4">Effective Date: December 14, 2025</p>
-
-            <div className="text-sm text-slate-600 space-y-6 text-left">
-              
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">1. Introduction & Compliance with Jamaican Law</h3>
-                <p className="mb-2">
-                  Shelf Scout ("we," "us," or "our") respects the privacy of our users ("you" or "Data Subject") and is committed to protecting your personal data in accordance with the <strong>Data Protection Act, 2020 (the "DPA") of Jamaica.</strong>
-                </p>
-                <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 mt-3">
-                  <p className="font-semibold text-xs uppercase text-emerald-600 mb-1">Data Controller Identity</p>
-                  <p className="font-medium text-slate-800">Shelf Scout</p>
-                  <p>Watchwell, Watchwell P.A.</p>
-                  <p>St. Elizabeth, Jamaica</p>
-                  <p className="mt-1">Email: <a href="mailto:info@shelfscoutja.com" className="text-emerald-700 underline">info@shelfscoutja.com</a></p>
-                </div>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">2. The Personal Data We Collect</h3>
-                <ul className="list-disc pl-5 space-y-1 marker:text-emerald-500">
-                  <li><strong>Identity Data:</strong> Name, username (if you register).</li>
-                  <li><strong>Contact Data:</strong> Email address (for newsletters or account management).</li>
-                  <li><strong>Technical Data:</strong> IP address, browser type, and location data (e.g., distinguishing Hilo Spanish Town vs. Kingston).</li>
-                  <li><strong>Usage Data:</strong> Which grocery products you search for and click on.</li>
-                </ul>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">3. Lawful Basis for Processing</h3>
-                <p className="mb-2">Under Jamaican law, we rely on the following:</p>
-                <ul className="list-disc pl-5 space-y-1 marker:text-emerald-500">
-                  <li><strong>Consent:</strong> Explicit agreement for newsletters/cookies.</li>
-                  <li><strong>Performance of a Contract:</strong> Providing requested services (e.g., saving lists).</li>
-                  <li><strong>Legitimate Interests:</strong> Improving security and preventing fraud.</li>
-                </ul>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">4. How We Use Your Data</h3>
-                <p>We use your data to compare grocery prices, manage accounts, deliver alerts, and attribute affiliate commissions (via Amazon Associates).</p>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">5. International Transfers (Tech Stack)</h3>
-                <p>
-                  We utilize third-party cloud service providers (Google Firebase/Supabase). While Shelf Scout is based in Jamaica, your data may be stored on secure servers abroad. By using our services, you consent to this transfer.
-                </p>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">6. Disclosure to Third Parties</h3>
-                <p>
-                  We do not sell your personal data. We share strict operational data with Service Providers (Google Cloud), Analytics Providers, or legal authorities (Jamaican Constabulary Force/Courts) if required.
-                </p>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">7. Your Rights Under the Jamaican DPA</h3>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to be Informed</li>
-                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right of Access</li>
-                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Rectification</li>
-                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Erasure</li>
-                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Restrict Processing</li>
-                  <li className="flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span>Right to Data Portability</li>
-                </ul>
-                <p className="mt-2 text-xs">To exercise these rights, contact <a href="mailto:info@shelfscoutja.com" className="text-emerald-600 hover:underline">info@shelfscoutja.com</a>.</p>
-              </section>
-
-              <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">8. Affiliate Disclosure</h3>
-                <p>
-                  Shelf Scout uses affiliate links, including the Amazon Associates Program. Clicking links and making purchases may result in us earning a commission at no extra cost to you.
-                </p>
-              </section>
-
-               <section>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">9. Data Retention & OIC</h3>
-                <p>
-                  We retain data only as long as necessary. You have the right to complain to the Office of the Information Commissioner (OIC) in Jamaica, but we appreciate the chance to resolve concerns first.
-                </p>
-              </section>
-
-            </div>
-
-            {/* Bottom Close Button */}
-            <div className="sticky bottom-0 bg-white pt-4 border-t mt-6">
-              <button 
-                onClick={() => setShowPrivacy(false)}
-                className="w-full py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-lg"
-              >
-                I Understand
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedProduct && (
-        <ProductModal 
-            product={selectedProduct} 
-            onClose={() => setSelectedProduct(null)} 
-        />
-      )}
-
-      <CartDrawer />
-
-      <ChatBot availableProducts={products || []} />
-    </>
-  );
-};
+                        {
