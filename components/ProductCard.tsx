@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Share2, Heart, Store as StoreIcon } from 'lucide-react';
+import { Plus, Share2, Heart, Store as StoreIcon, AlertCircle } from 'lucide-react';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
@@ -10,20 +10,35 @@ interface Props {
 }
 
 export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
-  const { addToCart, primaryStore, stores } = useShop();
+  const { addToCart, stores, currentParish } = useShop();
   const { isDarkMode } = useTheme();
 
-  // Determine the display price
-  const displayPrice = useMemo(() => {
-    if (primaryStore && product.prices[primaryStore.id]) {
-      return product.prices[primaryStore.id];
-    }
-    const prices = Object.values(product.prices).filter((p): p is number => typeof p === 'number');
-    return prices.length > 0 ? Math.min(...prices) : 0;
-  }, [product, primaryStore]);
+  // --- METICULOUS DATA LOGIC ---
+  
+  // 1. Identify valid stores strictly within the Current Parish
+  const parishStores = useMemo(() => {
+    if (!currentParish) return [];
+    return stores.filter(store => store.parish_id === currentParish.id);
+  }, [stores, currentParish]);
 
-  const storeCount = Object.keys(product.prices).length;
+  // 2. Calculate Availability & Pricing based ONLY on Parish Stores
+  const { displayPrice, availableStoreCount, isAvailableInParish } = useMemo(() => {
+    // Get all prices for this product specifically from stores in the current parish
+    const localPrices = parishStores
+      .map(store => product.prices[store.id])
+      .filter((price): price is number => typeof price === 'number');
 
+    const count = localPrices.length;
+    const lowest = count > 0 ? Math.min(...localPrices) : 0;
+
+    return {
+      displayPrice: lowest,
+      availableStoreCount: count,
+      isAvailableInParish: count > 0
+    };
+  }, [parishStores, product.prices]);
+
+  // --- INTERACTION ---
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     addToCart(product);
@@ -38,21 +53,27 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
           : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
       }`}
     >
-      {/* 1. IMAGE CONTAINER - Fixed Height (h-40) instead of Aspect Square */}
-      {/* We keep bg-white to ensure non-transparent JPEGs don't look like ugly stickers on a dark background */}
+      {/* 1. IMAGE CONTAINER - Fixed Height (h-40) */}
       <div className="h-40 w-full relative p-4 flex items-center justify-center bg-white border-b border-slate-100/10">
         <img 
           src={product.image_url} 
           alt={product.name} 
-          className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110"
+          className={`h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110 ${!isAvailableInParish ? 'grayscale opacity-60' : ''}`}
           loading="lazy"
         />
         
-        {/* Store Badge */}
-        {storeCount > 1 && (
-          <div className="absolute top-2 left-2 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
-            <StoreIcon size={10} className="mr-1 text-emerald-400" />
-            {storeCount} Stores
+        {/* Availability Badge */}
+        {isAvailableInParish ? (
+          availableStoreCount > 1 && (
+            <div className="absolute top-2 left-2 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
+              <StoreIcon size={10} className="mr-1 text-emerald-400" />
+              {availableStoreCount} Stores
+            </div>
+          )
+        ) : (
+          <div className="absolute top-2 left-2 bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
+            <AlertCircle size={10} className="mr-1" />
+            N/A in {currentParish?.name}
           </div>
         )}
 
@@ -86,19 +107,24 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
         <div className="flex items-center justify-between mt-auto pt-2">
           <div className="flex flex-col">
             <span className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              From
+              {isAvailableInParish ? 'From' : 'Status'}
             </span>
-            <span className="font-extrabold text-lg text-emerald-500 leading-none">
-              ${displayPrice.toLocaleString()}
+            <span className={`font-extrabold text-lg leading-none ${
+              isAvailableInParish ? 'text-emerald-500' : (isDarkMode ? 'text-slate-600' : 'text-slate-300')
+            }`}>
+              {isAvailableInParish ? `$${displayPrice.toLocaleString()}` : 'No Data'}
             </span>
           </div>
 
           <button 
             onClick={handleAdd}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg shadow-emerald-500/20 ${
-              isDarkMode 
-                ? 'bg-emerald-500 text-white hover:bg-emerald-400' 
-                : 'bg-slate-900 text-white hover:bg-emerald-600'
+            disabled={!isAvailableInParish}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${
+              isAvailableInParish
+                ? (isDarkMode 
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20' 
+                    : 'bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20')
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
             <Plus size={18} strokeWidth={3} />
