@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, ChevronRight, TrendingDown, Sun, Moon, MapPin, ArrowLeft, 
-  ShoppingBag, Bell, Loader2, Database, Store as StoreIcon, Save, Zap, 
-  XCircle, LogOut, Mail, Lock, X, Minus, Plus, Utensils, Clock, 
-  Wallet, Award, Heart, Trash2, Check, AlertCircle 
+  ShoppingBag, Bell, Loader2, Database, Store as StoreIcon, Zap, 
+  XCircle, Plus, Minus, Trash2, Utensils, Clock 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
@@ -49,19 +48,10 @@ export const ActiveDashboard: React.FC = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   
   // Auth State
-  const [userEmail, setUserEmail] = useState<string | null>(() => {
-      try { return localStorage.getItem('shelf_scout_user_email'); } catch { return null; }
-  });
-  const [loginInput, setLoginInput] = useState('');
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const [unlockError, setUnlockError] = useState('');
-  
-  // Modal State
-  const [showSignupModal, setShowSignupModal] = useState(false);
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   // Filter State
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -86,22 +76,8 @@ export const ActiveDashboard: React.FC = () => {
     } catch (e) { console.error(e); }
   }, [searchTerm]);
 
-  useEffect(() => {
-      if (activeTab === 'profile') {
-          try {
-              const saved = localStorage.getItem('shelf_scout_saved');
-              if (saved) {
-                  setSavedProductIds(JSON.parse(saved));
-              }
-          } catch (e) {
-              console.error("Error loading saved items", e);
-          }
-      }
-  }, [activeTab]);
-
   // Product Logic
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [savedProductIds, setSavedProductIds] = useState<string[]>([]);
 
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
@@ -110,11 +86,6 @@ export const ActiveDashboard: React.FC = () => {
         p.tags.some(t => t.includes(searchTerm.toLowerCase()))
     );
   }, [products, searchTerm]);
-
-  const savedProducts = useMemo(() => {
-      if (!products || !Array.isArray(products)) return [];
-      return products.filter(p => savedProductIds.includes(p.id));
-  }, [products, savedProductIds]);
 
   const triggeredAlerts = useMemo(() => {
       if (!currentParish || isLoadingProducts || !products) return [];
@@ -154,12 +125,6 @@ export const ActiveDashboard: React.FC = () => {
   }, [cart]);
 
   // Actions
-  const removeSavedItem = (id: string) => {
-      const newSaved = savedProductIds.filter(pid => pid !== id);
-      setSavedProductIds(newSaved);
-      localStorage.setItem('shelf_scout_saved', JSON.stringify(newSaved));
-  };
-
   const handleProductClick = (p: Product) => {
     setSelectedProduct(p);
   };
@@ -328,6 +293,7 @@ export const ActiveDashboard: React.FC = () => {
                 {renderHeader()}
                 
                 <div className="px-4 mb-6">
+                    {/* Goal Card */}
                     <div 
                         onClick={() => setShowSignupModal(true)}
                         className={`rounded-xl p-4 border relative overflow-hidden cursor-pointer transition-transform active:scale-[0.98] ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-900 border-slate-800'}`}
@@ -345,14 +311,12 @@ export const ActiveDashboard: React.FC = () => {
                                  <div className="text-[10px] text-slate-400 uppercase font-bold">Joined</div>
                              </div>
                          </div>
-                         
                          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden relative z-10">
                              <div 
                                 className="bg-gradient-to-r from-emerald-500 to-yellow-400 h-full rounded-full transition-all duration-1000" 
                                 style={{ width: `${isNaN(progressPercent) ? 0 : progressPercent}%` }}
                              ></div>
                          </div>
-                         
                          <div className="mt-3 relative z-10">
                              <div className="flex items-center justify-between">
                                  <span className="text-[10px] text-emerald-400 font-bold">
@@ -363,8 +327,6 @@ export const ActiveDashboard: React.FC = () => {
                                  </span>
                              </div>
                          </div>
-
-                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl"></div>
                     </div>
                 </div>
 
@@ -452,7 +414,8 @@ export const ActiveDashboard: React.FC = () => {
                              </div>
                         ) : products && products.length > 0 ? (
                             <>
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* GRID FIX FOR PC: Added lg:grid-cols-4 xl:grid-cols-5 */}
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                     {products.map(p => (
                                         <ProductCard 
                                             key={p.id} 
@@ -678,7 +641,7 @@ export const ActiveDashboard: React.FC = () => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredProducts.map(product => (
                         <ProductCard 
                             key={product.id} 
@@ -769,7 +732,6 @@ export const ActiveDashboard: React.FC = () => {
             </div>
         </div>
       )}
-      
       {/* Privacy Policy Modal */}
       {showPrivacy && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
