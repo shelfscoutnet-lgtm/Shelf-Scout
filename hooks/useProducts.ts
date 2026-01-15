@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Product } from '../types';
-import { useShop } from '../context/ShopContext'; // New Import
+import { useShop } from '../context/ShopContext'; 
 import { PRODUCTS } from '../constants';
 
 export const useProducts = (category?: string | null) => {
@@ -9,16 +9,15 @@ export const useProducts = (category?: string | null) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // METICULOUS LOGIC: We now pull currentParish to filter data at the database level
-  const { currentParish } = useShop();
+  const { currentParish, selectedLocation } = useShop();
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         
-        // 1. Start the query. 
-        // We removed '!inner' from prices so products stay visible even if no local price exists.
+        // METICULOUS FIX: We now fetch the city from the stores table
+        // so that the UI can filter prices by "Exact Location"
         let query = supabase
           .from('products')
           .select(`
@@ -27,18 +26,21 @@ export const useProducts = (category?: string | null) => {
               store_id,
               price,
               stores!inner (
-                parish
+                parish,
+                city
               )
             )
           `);
 
-        // 2. Filter by Parish (The Crucial Fix)
-        // This ensures the product only sees stores in the user's active parish.
         if (currentParish?.id) {
             query = query.eq('prices.stores.parish', currentParish.id);
         }
 
-        // 3. Apply Category filter
+        // Apply City Filter if user selected a specific area (e.g., "Pines")
+        if (selectedLocation && selectedLocation !== 'All') {
+            query = query.eq('prices.stores.city', selectedLocation);
+        }
+
         if (category && category !== 'All') {
             query = query.ilike('category', `%${category}%`);
         }
@@ -56,7 +58,6 @@ export const useProducts = (category?: string | null) => {
             image_url: item.image_url,
             unit: item.unit,
             tags: item.tags || [],
-            // Transform only the local prices into the component's expected format
             prices: item.prices?.reduce((acc: Record<string, number>, curr: any) => {
               acc[curr.store_id] = curr.price;
               return acc;
@@ -66,14 +67,8 @@ export const useProducts = (category?: string | null) => {
           setProducts(formattedProducts);
         }
       } catch (err: any) {
-        console.warn('Supabase fetch filtered by parish failed:', err.message);
-        
-        // Meticulous Fallback to mock data
-        let fallback = PRODUCTS;
-        if (category && category !== 'All') {
-            fallback = fallback.filter(p => p.category === category);
-        }
-        setProducts(fallback);
+        console.warn('Fetch failed, using mock data:', err.message);
+        setProducts(PRODUCTS);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -81,7 +76,7 @@ export const useProducts = (category?: string | null) => {
     };
 
     fetchProducts();
-  }, [category, currentParish?.id]); // Re-run when category OR parish changes
+  }, [category, currentParish?.id, selectedLocation]); // Re-run when city changes!
 
   return { products, loading, error };
 };
