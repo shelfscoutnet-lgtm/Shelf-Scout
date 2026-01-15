@@ -1,62 +1,71 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-// We now accept an optional 'currentParishId'
-export const useSignups = (currentParishId?: string) => {
+export const useSignups = (parishId?: string) => {
   const [signupCount, setSignupCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch signups (Filtered by Parish if an ID is provided)
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        // Start the query
-        let query = supabase
-          .from('signups')
-          .select('*', { count: 'exact', head: true });
-        
-        // IF a parish is selected, only count signups for that parish
-        if (currentParishId) {
-          query = query.eq('parish_id', currentParishId);
-        }
-
-        const { count, error } = await query;
-        
-        if (error) throw error;
-        
-        if (count !== null) {
-          setSignupCount(count);
-        }
-      } catch (err) {
-        console.warn('Signup fetch failed, using default', err);
-        setSignupCount(0); 
-      }
-    };
-
-    fetchCount();
-  }, [currentParishId]); // Re-run this whenever the parish changes
-
-  const submitSignup = async (data: { name: string; email: string; phone?: string; parish_id: string }) => {
-    setLoading(true);
+  // 1. Fetch current count for THIS parish only
+  const fetchCount = async () => {
+    if (!parishId) return;
+    
     try {
-      const { error } = await supabase
+      setLoading(true);
+      const { count, error } = await supabase
         .from('signups')
-        .insert([data]);
+        .select('*', { count: 'exact', head: true })
+        .eq('parish_id', parishId); // Filter by the specific parish
 
       if (error) throw error;
-      
-      // Optimistic update (Only add 1 if it matches the current view)
-      if (data.parish_id === currentParishId) {
-        setSignupCount(prev => prev + 1);
-      }
-      return { success: true };
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      return { success: false, error: error.message };
+      setSignupCount(count || 0);
+    } catch (err) {
+      console.error('Error fetching signup count:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  return { signupCount, submitSignup, loading };
+  useEffect(() => {
+    fetchCount();
+
+    // 2. Realtime Subscription (filtered to this parish)
+    // This ensures Portmore users don't see the bar move when a Kingston user joins
+    const channel = supabase
+      .channel(`public:signups:parish:${parishId}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'signups',
+          filter: `parish_id=eq.${parishId}` 
+        },
+        () => {
+          // Increment count locally for instant UI feedback
+          setSignupCount(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [parishId]);
+
+  // 3. Submit function that records the user's parish
+  const submitSignup = async (userData: { name: string; email: string; parish_id: string }) => {
+    try {
+      const { error } = await supabase
+        .from('signups')
+        .insert([userData]);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      console.error('Signup failed:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  return { signupCount, loading, submitSignup };
 };
