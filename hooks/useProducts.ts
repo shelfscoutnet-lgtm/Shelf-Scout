@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext'; 
-import { PRODUCTS } from '../constants';
 
 export const useProducts = (category?: string | null) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -16,8 +15,8 @@ export const useProducts = (category?: string | null) => {
       try {
         setLoading(true);
         
-        // METICULOUS FIX: We now fetch the city from the stores table
-        // so that the UI can filter prices by "Exact Location"
+        // METICULOUS LOGIC: Fetch prices + Store Branch Details (Name & City)
+        // This enables the "Branch Badge" feature for Portmore precision.
         let query = supabase
           .from('products')
           .select(`
@@ -25,18 +24,21 @@ export const useProducts = (category?: string | null) => {
             prices (
               store_id,
               price,
+              gct_tag,
               stores!inner (
+                name,
                 parish,
                 city
               )
             )
           `);
 
+        // Filter by the selected Parish
         if (currentParish?.id) {
             query = query.eq('prices.stores.parish', currentParish.id);
         }
 
-        // Apply City Filter if user selected a specific area (e.g., "Pines")
+        // METICULOUS ADDITION: If the user selected a city like 'Portmore'
         if (selectedLocation && selectedLocation !== 'All') {
             query = query.eq('prices.stores.city', selectedLocation);
         }
@@ -51,15 +53,14 @@ export const useProducts = (category?: string | null) => {
 
         if (data) {
           const formattedProducts: Product[] = data.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            brand: item.brand,
-            category: item.category,
-            image_url: item.image_url,
-            unit: item.unit,
-            tags: item.tags || [],
-            prices: item.prices?.reduce((acc: Record<string, number>, curr: any) => {
-              acc[curr.store_id] = curr.price;
+            ...item,
+            // Organize prices and metadata (GCT + Branch Name) for the UI
+            prices: item.prices?.reduce((acc: any, curr: any) => {
+              acc[curr.store_id] = {
+                val: curr.price,
+                gct: curr.gct_tag,
+                branch: `${curr.stores.name} - ${curr.stores.city}`
+              };
               return acc;
             }, {}) || {}
           }));
@@ -67,8 +68,7 @@ export const useProducts = (category?: string | null) => {
           setProducts(formattedProducts);
         }
       } catch (err: any) {
-        console.warn('Fetch failed, using mock data:', err.message);
-        setProducts(PRODUCTS);
+        console.warn('Scout Fetch Failed:', err.message);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -76,7 +76,7 @@ export const useProducts = (category?: string | null) => {
     };
 
     fetchProducts();
-  }, [category, currentParish?.id, selectedLocation]); // Re-run when city changes!
+  }, [category, currentParish?.id, selectedLocation]);
 
   return { products, loading, error };
 };
