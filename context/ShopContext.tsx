@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Parish, Product, CartItem, Store, PriceAlert } from '../types';
+import { Parish, Product, CartItem, Store } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
 
@@ -7,57 +7,50 @@ interface ShopContextType {
   currentParish: Parish | null;
   setCurrentParish: (parish: Parish) => void;
   resetParish: () => void;
-  isLoadingLocation: boolean;
-  manualOverride: (id: string) => void;
+  isLoading: boolean; // Unified loading state
   
   stores: Store[]; 
-  locations: string[]; // Dynamically fetched cities (e.g., "Portmore")
+  locations: string[]; 
   selectedLocation: string; 
   setSelectedLocation: (loc: string) => void;
   
   cart: CartItem[];
-  cartItemCount: number;
-  addToCart: (product: Product, storeId?: string) => void;
   getCartTotal: (storeId?: string) => number;
+  addToCart: (product: Product, storeId?: string) => void;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { detectedParish, loading: isLoadingLocation, manualOverride } = useParishLocator();
+  const { detectedParish, loading: locLoading, manualOverride } = useParishLocator();
   const [currentParish, setCurrentParish] = useState<Parish | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
+  const [cart, setCart] = useState<CartItem[]>([]);
 
-  // METICULOUS FIX: Fetch stores using currentParish.id (st-catherine) 
-  // to match the standardized database IDs.
-  const { stores } = useStores(currentParish?.id);
+  // 1. Meticulous Store Fetching: Use standardized Parish ID (e.g., 'st-catherine')
+  const { stores = [], loading: storesLoading } = useStores(currentParish?.id) || {};
 
+  // 2. Lifecycle: Sync detected parish to local state
   useEffect(() => {
     if (detectedParish) setCurrentParish(detectedParish);
   }, [detectedParish]);
 
-  // DYNAMIC CITY SELECTOR: Extract unique cities from the stores in this parish
+  // 3. Meticulous City Extraction: Derived from verified store data
   const locations = useMemo(() => {
     if (!stores.length) return [];
-    // Filter out "Unknown" and get unique cities like "Portmore"
     const citySet = new Set<string>();
     stores.forEach(s => {
-      if (s.city && s.city !== 'Unknown') {
-        citySet.add(s.city);
-      }
+      if (s.city && s.city !== 'Unknown') citySet.add(s.city);
     });
     return Array.from(citySet).sort();
   }, [stores]);
 
-  const [cart, setCart] = useState<CartItem[]>([]);
-
-  // UPDATED CART CALCULATION: Handles the new Price Package structure
+  // 4. Meticulous Calculations: Ensure sub-totals are calculated correctly
   const getCartTotal = (storeId?: string) => {
     return cart.reduce((total, item) => {
-      // Logic: Find the price in the specific store branch
-      const priceData = (item.prices as any)[storeId || ''];
-      const priceValue = typeof priceData === 'object' ? priceData.val : priceData;
-      return total + ((priceValue || 0) * item.quantity);
+      const priceEntry = (item.prices as any)?.[storeId || ''];
+      const val = typeof priceEntry === 'object' ? priceEntry.val : priceEntry;
+      return total + ((val || 0) * item.quantity);
     }, 0);
   };
 
@@ -71,20 +64,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const resetParish = () => {
-    setCurrentParish(null);
-    setSelectedLocation('All');
+  const value = {
+    currentParish,
+    setCurrentParish,
+    resetParish: () => { setCurrentParish(null); setSelectedLocation('All'); },
+    isLoading: locLoading || storesLoading,
+    manualOverride,
+    stores,
+    locations,
+    selectedLocation,
+    setSelectedLocation,
+    cart,
+    getCartTotal,
+    addToCart
   };
 
-  return (
-    <ShopContext.Provider value={{
-      currentParish, setCurrentParish, resetParish, isLoadingLocation,
-      manualOverride, stores, locations, selectedLocation, setSelectedLocation,
-      cart, cartItemCount: cart.length, addToCart, getCartTotal
-    }}>
-      {children}
-    </ShopContext.Provider>
-  );
+  return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 };
 
 export const useShop = () => {
