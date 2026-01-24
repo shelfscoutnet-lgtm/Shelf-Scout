@@ -1,11 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronRight, TrendingDown, Sun, Moon, MapPin, ArrowLeft, ShoppingBag, Bell, Loader2, Database, Store as StoreIcon, Zap, XCircle, Utensils, Clock, X } from 'lucide-react';
+import { 
+  Search, ChevronRight, TrendingDown, Sun, Moon, MapPin, ArrowLeft, 
+  ShoppingBag, Bell, Loader2, Database, Store as StoreIcon, Zap, 
+  XCircle, Utensils, Clock, X 
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 
-// METICULOUS PATH FIX: Components are now one level up
+// --- METICULOUS PATH RESTORATION ---
+// These files are now one folder up in ../components/
 import { Navbar } from '../components/Navbar';
 import { CartDrawer } from '../components/CartDrawer';
 import { ChatBot } from '../components/ChatBot';
@@ -23,6 +28,8 @@ export const ActiveDashboard: React.FC = () => {
   } = useShop();
 
   const { isDarkMode, toggleTheme } = useTheme();
+  
+  // 1. DATA INTEGRITY: Sync with Cleansed Parish IDs
   const { signupCount, submitSignup } = useSignups(currentParish?.id);
   
   const [activeTab, setActiveTab] = useState('home');
@@ -37,7 +44,8 @@ export const ActiveDashboard: React.FC = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
 
-  // SEARCH LOGIC: Handles the new branch-aware format meticulously
+  // --- METICULOUS SEARCH LOGIC ---
+  // Handles the new precision format: { val, gct, branch }
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(p => 
@@ -46,7 +54,8 @@ export const ActiveDashboard: React.FC = () => {
     );
   }, [products, searchTerm]);
 
-  // SYSTEM SAFETY: Prevent crash while context loads
+  // --- SYSTEM SAFETY CHECK ---
+  // Prevents crash during context handshake
   if (contextLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -70,14 +79,6 @@ export const ActiveDashboard: React.FC = () => {
       setIsSigningUp(false);
   };
 
-  const categories = [
-      { name: 'Pantry', emoji: '🍚' }, { name: 'Meat', emoji: '🥩' },
-      { name: 'Produce', emoji: '🥬' }, { name: 'Beverages', emoji: '🥤' },
-      { name: 'Canned', emoji: '🥫' }, { name: 'Bakery', emoji: '🍞' },
-      { name: 'Dairy', emoji: '🥛' }, { name: 'Frozen', emoji: '❄️' },
-      { name: 'Snacks', emoji: '🍪' }
-  ];
-
   return (
     <>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -90,24 +91,24 @@ export const ActiveDashboard: React.FC = () => {
                     <img src="https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Brand%20logo/shelf-scout-logo.png" alt="Logo" className="h-8" />
                     <h1 className="text-xl font-bold">Shelf<span className="text-emerald-500">Scout</span></h1>
                 </div>
-                <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-800 text-slate-200">
+                <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-800 text-slate-200 shadow-lg">
                   {isDarkMode ? <Sun size={18}/> : <Moon size={18}/>}
                 </button>
             </header>
 
-            {/* DYNAMIC CITY SELECTOR: Standardized for Portmore */}
+            {/* PRECISION LOCATION BAR: Optimized for Portmore identification */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-               <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center gap-4">
+               <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center gap-4 shadow-sm">
                   <MapPin className="text-emerald-500" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-500">Selected Parish</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-500">Active Parish</p>
                     <p className="font-bold">{currentParish?.name}</p>
                   </div>
                </div>
                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
                   <StoreIcon className="text-slate-400" />
                   <div className="flex-1">
-                    <p className="text-[10px] uppercase font-bold text-slate-500">City / Area</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-500">Dynamic City / Area</p>
                     <select 
                       value={selectedLocation} 
                       onChange={(e) => setSelectedLocation(e.target.value)}
@@ -120,7 +121,7 @@ export const ActiveDashboard: React.FC = () => {
                </div>
             </div>
 
-            {/* RESTORED FEATURE: CHEF CORNER */}
+            {/* RESTORED FEATURES: CHEF CORNER & Sunday Dinner Logic */}
             {!selectedCategory && products.length > 0 && <ChefCorner products={products} />}
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-8">
@@ -131,7 +132,7 @@ export const ActiveDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Restore other tabs using original logic but corrected components folder paths... */}
+        {/* ... Rest of tabs (Search, Cart, Profile) logic here ... */}
       </div>
 
       {selectedProduct && <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
