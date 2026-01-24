@@ -1,18 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronRight, TrendingDown, Sun, Moon, MapPin, ArrowLeft, ShoppingBag, Bell, Loader2, Database, Store as StoreIcon, Zap, XCircle, Utensils, Clock } from 'lucide-react';
+import { Search, ChevronRight, TrendingDown, Sun, Moon, MapPin, ArrowLeft, ShoppingBag, Bell, Loader2, Database, Store as StoreIcon, Zap, XCircle, Utensils, Clock, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
-import { Navbar } from './Navbar';
-import { CartDrawer } from './CartDrawer';
-import { ChatBot } from './ChatBot';
-import { ProductModal } from './ProductModal';
-import { ProductCard } from './ProductCard';
-import { ChefCorner } from './ChefCorner';
+
+// METICULOUS PATH FIX: Components are now one level up
+import { Navbar } from '../components/Navbar';
+import { CartDrawer } from '../components/CartDrawer';
+import { ChatBot } from '../components/ChatBot';
+import { ProductModal } from '../components/ProductModal';
+import { ProductCard } from '../components/ProductCard';
+import { ChefCorner } from '../components/ChefCorner';
+import { AdminUpload } from '../components/AdminUpload';
 import { useProducts } from '../hooks/useProducts';
 import { useSignups } from '../hooks/useSignups';
-import { AdminUpload } from './AdminUpload';
 
 export const ActiveDashboard: React.FC = () => {
   const { 
@@ -21,21 +23,21 @@ export const ActiveDashboard: React.FC = () => {
   } = useShop();
 
   const { isDarkMode, toggleTheme } = useTheme();
-  
-  // 1. DATA INTEGRITY: Use Parish ID for signups to match cleansed DB
   const { signupCount, submitSignup } = useSignups(currentParish?.id);
+  
   const [activeTab, setActiveTab] = useState('home');
   const [showAdminUpload, setShowAdminUpload] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  
-  // 2. SEARCH & FILTER: Integrate with Portmore Precision Hook
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { products, loading: productsLoading } = useProducts(selectedCategory);
   const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('shelf_scout_search') || '');
-
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
-  // METICULOUS SEARCH LOGIC: Handles the new branch-aware format
+  // SEARCH LOGIC: Handles the new branch-aware format meticulously
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(p => 
@@ -44,8 +46,8 @@ export const ActiveDashboard: React.FC = () => {
     );
   }, [products, searchTerm]);
 
-  // 3. ARCHITECTURE: Prevent "System Error" by checking loading states
-  if (contextLoading || (productsLoading && !products.length)) {
+  // SYSTEM SAFETY: Prevent crash while context loads
+  if (contextLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <Loader2 className="animate-spin text-emerald-500" size={32} />
@@ -53,10 +55,19 @@ export const ActiveDashboard: React.FC = () => {
     );
   }
 
-  // Action: Signup
   const handleActiveSignup = async (e: React.FormEvent) => {
       e.preventDefault();
-      // Implementation logic remains the same...
+      if (!currentParish || !signupName || !signupEmail) return;
+      setIsSigningUp(true);
+      if (submitSignup) {
+        const res = await submitSignup({ name: signupName, email: signupEmail, parish_id: currentParish.id });
+        if (res.success) {
+            setShowSignupModal(false);
+            setSignupName(''); setSignupEmail('');
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
+      }
+      setIsSigningUp(false);
   };
 
   const categories = [
@@ -70,25 +81,26 @@ export const ActiveDashboard: React.FC = () => {
   return (
     <>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className={`min-h-screen ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
+      <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
         
-        {/* TAB RENDERING LOGIC */}
         {activeTab === 'home' && (
-          <div className="pb-24 pt-4 px-4 max-w-7xl mx-auto">
+          <div className="pb-24 pt-4 px-4 max-w-7xl mx-auto animate-fade-in">
             <header className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2">
                     <img src="https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Brand%20logo/shelf-scout-logo.png" alt="Logo" className="h-8" />
                     <h1 className="text-xl font-bold">Shelf<span className="text-emerald-500">Scout</span></h1>
                 </div>
-                <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-800"><Sun size={18}/></button>
+                <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-800 text-slate-200">
+                  {isDarkMode ? <Sun size={18}/> : <Moon size={18}/>}
+                </button>
             </header>
 
-            {/* DYNAMIC CITY SELECTOR: No more hardcoding  */}
+            {/* DYNAMIC CITY SELECTOR: Standardized for Portmore */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center gap-4">
                   <MapPin className="text-emerald-500" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-500">Parish</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-500">Selected Parish</p>
                     <p className="font-bold">{currentParish?.name}</p>
                   </div>
                </div>
@@ -99,7 +111,7 @@ export const ActiveDashboard: React.FC = () => {
                     <select 
                       value={selectedLocation} 
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="bg-transparent font-bold w-full focus:outline-none"
+                      className="bg-transparent font-bold w-full focus:outline-none dark:text-white"
                     >
                       <option value="All">All {currentParish?.name}</option>
                       {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
@@ -108,10 +120,9 @@ export const ActiveDashboard: React.FC = () => {
                </div>
             </div>
 
-            {/* FEATURE: CHEF CORNER  */}
-            {!selectedCategory && <ChefCorner products={products} />}
+            {/* RESTORED FEATURE: CHEF CORNER */}
+            {!selectedCategory && products.length > 0 && <ChefCorner products={products} />}
 
-            {/* PRODUCT GRID: Updated with Grid fix for PC */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-8">
                 {filteredProducts.map(p => (
                     <ProductCard key={p.id} product={p} onClick={() => setSelectedProduct(p)} />
@@ -120,7 +131,7 @@ export const ActiveDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* ... Other Tabs: Cart, Search, Profile ... */}
+        {/* Restore other tabs using original logic but corrected components folder paths... */}
       </div>
 
       {selectedProduct && <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
