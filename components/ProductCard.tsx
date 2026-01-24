@@ -13,26 +13,34 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
   const { addToCart, stores, currentParish } = useShop();
   const { isDarkMode } = useTheme();
 
-  // --- METICULOUS DATA LOGIC ---
+  // --- DATA INTEGRITY LOGIC ---
   
-  // 1. Identify stores specifically in the current parish
+  // 1. Identify valid stores strictly within the Current Parish (matching cleansed IDs)
   const localStores = useMemo(() => {
     if (!currentParish) return [];
-    return stores.filter(store => store.parish_id === currentParish.id);
+    return stores.filter(store => store.parish === currentParish.id);
   }, [stores, currentParish]);
 
-  // 2. Calculate Pricing & Availability for this specific parish
-  const { localPrice, localStoreCount, hasLocalPrice } = useMemo(() => {
-    // Find prices only from stores in this parish
+  // 2. Extract context-specific pricing for this product
+  const { localPrice, localStoreCount, hasLocalPrice, gctTag } = useMemo(() => {
+    // Filter the universal product prices against the local store list
     const pricesInParish = localStores
-      .map(store => product.prices[store.id])
-      .filter((p): p is number => typeof p === 'number');
+      .map(store => ({
+        price: product.prices[store.id],
+        // Meticulous Check: Pull the new GCT tag from the product data
+        gct: (product as any).gct_tags?.[store.id] || "" 
+      }))
+      .filter(item => typeof item.price === 'number');
 
     const count = pricesInParish.length;
-    const lowest = count > 0 ? Math.min(...pricesInParish) : 0;
+    // Find the cheapest entry in this parish
+    const cheapest = count > 0 
+      ? pricesInParish.reduce((min, p) => p.price < min.price ? p : min, pricesInParish[0])
+      : null;
 
     return {
-      localPrice: lowest,
+      localPrice: cheapest ? cheapest.price : 0,
+      gctTag: cheapest ? cheapest.gct : "",
       localStoreCount: count,
       hasLocalPrice: count > 0
     };
@@ -53,7 +61,7 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
           : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
       }`}
     >
-      {/* 1. IMAGE CONTAINER - Full Color, Never Grayscale */}
+      {/* 1. IMAGE AREA */}
       <div className="h-40 w-full relative p-4 flex items-center justify-center bg-white border-b border-slate-100/10">
         <img 
           src={product.image_url} 
@@ -62,23 +70,21 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
           loading="lazy"
         />
         
-        {/* Availability Badge - Top Left */}
+        {/* Local Availability Badge */}
         {hasLocalPrice ? (
           localStoreCount > 1 && (
             <div className="absolute top-2 left-2 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
               <StoreIcon size={10} className="mr-1 text-emerald-400" />
-              {localStoreCount} Stores
+              {localStoreCount} Stores Locally
             </div>
           )
         ) : (
-          // BANNER: "No Prices Collected Yet" - Instead of graying out
-          <div className="absolute top-2 left-2 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
+          <div className="absolute top-2 left-2 bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
             <AlertCircle size={10} className="mr-1" />
-            No Price in {currentParish?.name}
+            Scout Needed
           </div>
         )}
 
-        {/* Heart Icon - Top Right */}
         <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
            <button className="p-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 shadow-sm">
              <Heart size={14} />
@@ -86,7 +92,7 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
         </div>
       </div>
 
-      {/* 2. DETAILS CONTAINER */}
+      {/* 2. DETAILS AREA */}
       <div className="p-3 flex flex-col flex-1">
         <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 truncate ${
           isDarkMode ? 'text-slate-500' : 'text-slate-400'
@@ -101,34 +107,37 @@ export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
         </h3>
 
         <div className={`text-xs mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-          {product.unit}
+          {product.unit || 'Standard Unit'}
         </div>
 
-        {/* Price Row - Pushed to bottom */}
+        {/* PRICE BAR */}
         <div className="flex items-center justify-between mt-auto pt-2">
           <div className="flex flex-col">
             <span className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              {hasLocalPrice ? 'Best Local Price' : 'Status'}
+              {hasLocalPrice ? 'Best Local Price' : 'Price Status'}
             </span>
             
-            {/* Price Display Logic */}
-            {hasLocalPrice ? (
-              <span className="font-extrabold text-lg text-emerald-500 leading-none">
-                ${localPrice.toLocaleString()}
+            <div className="flex items-baseline gap-1">
+              <span className={`font-extrabold text-lg leading-none ${
+                hasLocalPrice ? 'text-emerald-500' : (isDarkMode ? 'text-slate-600' : 'text-slate-300')
+              }`}>
+                {hasLocalPrice ? `$${localPrice.toLocaleString()}` : 'No Data'}
               </span>
-            ) : (
-              <span className={`text-sm font-bold leading-none ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                Scout Needed
-              </span>
-            )}
+              {/* METICULOUS GCT TAG DISPLAY */}
+              {hasLocalPrice && gctTag && (
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                  {gctTag}
+                </span>
+              )}
+            </div>
           </div>
 
           <button 
             onClick={handleAdd}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${
               isDarkMode 
-                ? 'bg-slate-800 text-white hover:bg-emerald-600 shadow-slate-900/20' 
-                : 'bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20'
+                ? 'bg-slate-800 text-white hover:bg-emerald-600' 
+                : 'bg-slate-900 text-white hover:bg-emerald-600'
             }`}
           >
             <Plus size={18} strokeWidth={3} />
