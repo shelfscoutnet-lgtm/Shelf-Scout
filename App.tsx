@@ -4,10 +4,11 @@ import { ShopProvider } from './context/ShopContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ParishGuard } from './components/ParishGuard';
 import { BetaBanner } from './components/BetaBanner';
-import { LandingPage } from './components/LandingPage'; // Import the new Landing Page
+import { LandingPage } from './components/LandingPage';
+import { ReviewOrder } from './components/ReviewOrder'; // Import Meticulous Component
 
 /**
- * Error Boundary component to catch rendering errors and prevent blank screens.
+ * METICULOUS ERROR BOUNDARY: Catch rendering errors across the app
  */
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
@@ -15,9 +16,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
+  static getDerivedStateFromError() { return { hasError: true }; }
 
   componentDidCatch(error: any, errorInfo: any) {
     console.error("Uncaught App Error:", error, errorInfo);
@@ -31,44 +30,45 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             <AlertCircle className="text-red-600" size={48} />
           </div>
           <h1 className="text-2xl font-bold mb-2">System Error</h1>
-          <p className="text-slate-500 mb-8 max-w-sm mx-auto">
-            The application encountered an unexpected issue. This could be due to missing configuration or a temporary connection failure.
+          <p className="text-slate-500 mb-8 max-w-sm mx-auto text-sm">
+            Shelf Scout encountered a data-syncing issue. This typically happens during regional data transitions.
           </p>
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95"
-            >
-              <RefreshCw size={18} />
-              Refresh Application
-            </button>
-            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">
-              Please check the developer console for details
-            </p>
-          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={18} />
+            Reconnect to Scout
+          </button>
         </div>
       );
     }
-
     return this.props.children;
   }
 }
 
 const App: React.FC = () => {
-  // State to track if the user has passed the landing page
   const [hasEntered, setHasEntered] = useState(false);
 
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <ShopProvider>
-          {/* LOGIC CHECK: Show Landing Page first, then the App */}
           {!hasEntered ? (
             <LandingPage onEnter={() => setHasEntered(true)} />
           ) : (
-            <div className="flex flex-col min-h-screen">
+            /* METICULOUS LAYOUT CONTAINER  */
+            <div className="flex flex-col min-h-screen relative">
               <BetaBanner />
-              <ParishGuard />
+              
+              <main className="flex-1 pb-32"> {/* Added padding for the ReviewOrder bar */}
+                <ParishGuard />
+              </main>
+
+              {/* METICULOUS PLACEMENT: ReviewOrder is inside ShopProvider 
+                and rendered as an overlay [cite: 160] 
+              */}
+              <ReviewOrder />
             </div>
           )}
         </ShopProvider>
