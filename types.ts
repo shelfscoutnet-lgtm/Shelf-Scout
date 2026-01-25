@@ -6,13 +6,11 @@ export interface Parish {
 export interface Store {
   id: string;
   name: string;
-  parish: string;
-  city: string;
+  parish: string; // Standardized ID like 'st-catherine'
+  city: string;   // Clean city name like 'Portmore'
   location?: string;
 }
 
-// METICULOUS FIX: Defines the new format { val, gct, branch } 
-// that prevents build failures.
 export interface PriceData {
   val: number;
   gct: string;
@@ -26,7 +24,6 @@ export interface Product {
   image_url: string;
   unit: string;
   tags: string[];
-  // Prices are now a record of our new PriceData objects
   prices: Record<string, PriceData>; 
 }
 
