@@ -1,27 +1,23 @@
-// 1. Core Regional Types
 export interface Parish {
-  id: string;   // Standardized ID: 'st-catherine'
-  name: string; // Display Name: 'St. Catherine'
+  id: string;
+  name: string;
 }
 
 export interface Store {
   id: string;
   name: string;
-  parish: string; // Linked to Parish.id
-  city: string;   // e.g., 'Portmore'
-  location?: string; // Specific area like 'Lot A-E'
+  parish: string;
+  city: string;
+  location?: string;
 }
 
-// 2. The "Precision" Price Object
-// This is what was causing your build to fail. 
-// We must explicitly define the shape of the data coming from Mega Mart.
+// THE NEW STANDARD: Price is no longer just a number!
 export interface PriceData {
-  val: number;    // The actual price: 905.00 
-  gct: string;    // The tag: '+gct' 
-  branch: string; // The specific location: 'Mega Mart - Portmore'
+  val: number;
+  gct: string;
+  branch: string;
 }
 
-// 3. The Universal Product
 export interface Product {
   id: string;
   name: string;
@@ -29,12 +25,10 @@ export interface Product {
   image_url: string;
   unit: string;
   tags: string[];
-  // Meticulous Fix: prices is a Record where the key is a Store ID 
-  // and the value is our new PriceData object.
+  // Prices are strictly objects now
   prices: Record<string, PriceData>; 
 }
 
-// 4. Cart and State Types
 export interface CartItem extends Product {
   quantity: number;
   selectedStoreId?: string;
