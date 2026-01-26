@@ -1,76 +1,32 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import { Store } from '../types';
-import { STORES, PARISHES } from '../constants';
+-- SHELF SCOUT DATABASE PURGE & RESTRUCTURING (JAN 2026)
+BEGIN;
 
-export const useStores = (parishName?: string) => {
-  const [stores, setStores] = useState<Store[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+-- 1. DELETE GHOST DATA
+-- Removes any stores or prices associated with the old "version0.5.0" test cycle
+DELETE FROM public.prices 
+WHERE store_id IN (SELECT id FROM public.stores WHERE name ILIKE '%version0.5.0%' OR location ILIKE '%test%');
 
-  useEffect(() => {
-    const fetchStores = async () => {
-      // Strict Logic: If no parish is selected, do not fetch any stores.
-      if (!parishName) {
-          setStores([]);
-          return;
-      }
+DELETE FROM public.stores 
+WHERE name ILIKE '%version0.5.0%' OR location ILIKE '%test%';
 
-      try {
-        setLoading(true);
-        
-        let query = supabase.from('stores').select('*');
+-- 2. RESET CITY/PARISH ALIGNMENT
+-- This ensures that 'Portmore' isn't accidentally showing up in 'Kingston'
+-- by forcing a strict ID-based relationship.
+UPDATE public.stores
+SET city = 'Portmore'
+WHERE location ILIKE '%Portmore%' OR name ILIKE '%Portmore%';
 
-        // Logic for KSA Launch Strategy
-        if (parishName === 'Kingston & St. Andrew') {
-             // Query BOTH Kingston and St. Andrew
-             query = query.in('parish', ['Kingston', 'St. Andrew']);
-        } else {
-             // Strict database filter for single parish name
-             query = query.eq('parish', parishName);
-        }
+UPDATE public.stores
+SET parish = 'st-catherine'
+WHERE city = 'Portmore';
 
-        const { data, error } = await query;
+-- 3. REMOVE ORPHANED PRICES
+-- If a price exists for a store that was a "ghost" and just got deleted, remove it.
+DELETE FROM public.prices
+WHERE store_id NOT IN (SELECT id FROM public.stores);
 
-        if (error) throw error;
+-- 4. CLEANUP EMPTY ENTRIES
+-- Prevents the 'Unknown' or blank city dropdowns in your UI
+DELETE FROM public.stores WHERE name IS NULL OR parish IS NULL;
 
-        if (data && data.length > 0) {
-            const mappedStores: Store[] = data.map((s: any) => ({
-                id: s.id,
-                name: s.name,
-                location: s.location || '',
-                // Map database 'parish' column to our internal 'parish_id' property
-                // For KSA launch, we map both to the active KSA ID, otherwise keep original
-                parish_id: (parishName === 'Kingston & St. Andrew') ? 'jm-ksa' : (s.parish_id || s.parish),
-                chain: s.chain || 'Independent',
-                is_premium: s.is_premium || false,
-                coords: s.latitude && s.longitude ? { lat: s.latitude, lng: s.longitude } : undefined
-            }));
-            setStores(mappedStores);
-        } else {
-            setStores([]);
-        }
-      } catch (err: any) {
-        console.warn('Error fetching stores, using mock data:', err.message);
-        
-        // Fallback to Mock Data logic
-        const parish = PARISHES.find(p => p.name === parishName);
-        const parishId = parish ? parish.id : (parishName === 'Kingston & St. Andrew' ? 'jm-ksa' : null);
-
-        if (parishId) {
-            setStores(STORES.filter(s => s.parish_id === parishId));
-        } else {
-            setStores([]);
-        }
-        
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStores();
-  }, [parishName]);
-
-  return { stores, loading, error };
-};
+COMMIT;
