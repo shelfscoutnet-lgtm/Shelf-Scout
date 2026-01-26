@@ -1,32 +1,50 @@
--- SHELF SCOUT DATABASE PURGE & RESTRUCTURING (JAN 2026)
-BEGIN;
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { Store } from '../types';
 
--- 1. DELETE GHOST DATA
--- Removes any stores or prices associated with the old "version0.5.0" test cycle
-DELETE FROM public.prices 
-WHERE store_id IN (SELECT id FROM public.stores WHERE name ILIKE '%version0.5.0%' OR location ILIKE '%test%');
+export const useStores = (parishId?: string) => {
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-DELETE FROM public.stores 
-WHERE name ILIKE '%version0.5.0%' OR location ILIKE '%test%';
+  useEffect(() => {
+    const fetchStores = async () => {
+      // METICULOUS GUARD: Uses standardized ID (st-catherine) to prevent "No Data" bug
+      if (!parishId) {
+        setStores([]);
+        return;
+      }
 
--- 2. RESET CITY/PARISH ALIGNMENT
--- This ensures that 'Portmore' isn't accidentally showing up in 'Kingston'
--- by forcing a strict ID-based relationship.
-UPDATE public.stores
-SET city = 'Portmore'
-WHERE location ILIKE '%Portmore%' OR name ILIKE '%Portmore%';
+      try {
+        setLoading(true);
+        // Fetching clean data columns to support Portmore Precision identification
+        const { data, error: supabaseError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('parish', parishId); 
 
-UPDATE public.stores
-SET parish = 'st-catherine'
-WHERE city = 'Portmore';
+        if (supabaseError) throw supabaseError;
 
--- 3. REMOVE ORPHANED PRICES
--- If a price exists for a store that was a "ghost" and just got deleted, remove it.
-DELETE FROM public.prices
-WHERE store_id NOT IN (SELECT id FROM public.stores);
+        // MAP: Transfers database rows to our clean TypeScript objects
+        const mappedStores: Store[] = (data || []).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          parish: s.parish,
+          city: s.city || 'Unknown',
+          location: s.location || ''
+        }));
 
--- 4. CLEANUP EMPTY ENTRIES
--- Prevents the 'Unknown' or blank city dropdowns in your UI
-DELETE FROM public.stores WHERE name IS NULL OR parish IS NULL;
+        setStores(mappedStores);
+      } catch (err: any) {
+        console.warn('Store Fetch Failed:', err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-COMMIT;
+    fetchStores();
+  }, [parishId]);
+
+  return { stores, loading, error };
+};
