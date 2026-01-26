@@ -13,37 +13,73 @@ export const useProducts = (category?: string | null) => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
+        
+        // 1. METICULOUS QUERY: Fetch product details and nested store info
         let query = supabase.from('products').select(`
           *,
           prices (
-            store_id, price, gct_tag,
-            stores!inner ( name, parish, city )
+            store_id,
+            price,
+            gct_tag,
+            stores!inner (
+              name,
+              parish,
+              city
+            )
           )
         `);
 
-        if (currentParish?.id) query = query.eq('prices.stores.parish', currentParish.id);
-        if (selectedLocation && selectedLocation !== 'All') query = query.eq('prices.stores.city', selectedLocation);
+        // Apply dynamic filters
+        if (currentParish?.id) {
+          query = query.eq('prices.stores.parish', currentParish.id);
+        }
+        if (selectedLocation && selectedLocation !== 'All') {
+          query = query.eq('prices.stores.city', selectedLocation);
+        }
+        if (category && category !== 'All') {
+          query = query.ilike('category', `%${category}%`);
+        }
 
         const { data, error } = await query;
         if (error) throw error;
 
         if (data) {
-          const mapped: Product[] = data.map((item: any) => ({
-            ...item,
-            // METICULOUS MAPPING: Convert raw DB numbers into PriceData objects
-            prices: item.prices?.reduce((acc: Record<string, PriceData>, curr: any) => {
-              acc[curr.store_id] = {
-                val: Number(curr.price),
-                gct: curr.gct_tag || '',
-                branch: `${curr.stores.name} (${curr.stores.city})`
-              };
-              return acc;
-            }, {}) || {}
-          }));
+          // 2. METICULOUS MAPPING: Transform Supabase data into our PriceData objects
+          const mapped: Product[] = data.map((item: any) => {
+            const priceMap: Record<string, PriceData> = {};
+            
+            if (item.prices && Array.isArray(item.prices)) {
+              item.prices.forEach((p: any) => {
+                if (p.price !== null) {
+                  priceMap[p.store_id] = {
+                    val: Number(p.price),
+                    gct: p.gct_tag || '',
+                    branch: `${p.stores.name} (${p.stores.city})`
+                  };
+                }
+              });
+            }
+
+            return {
+              id: item.id,
+              name: item.name,
+              category: item.category,
+              image_url: item.image_url,
+              unit: item.unit,
+              tags: item.tags || [],
+              prices: priceMap
+            };
+          });
+          
           setProducts(mapped);
         }
-      } catch (err) { console.error(err); } finally { setLoading(false); }
+      } catch (err) {
+        console.error('Scout Error:', err);
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchProducts();
   }, [category, currentParish?.id, selectedLocation]);
 
