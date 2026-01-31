@@ -1,6 +1,6 @@
 export interface Parish {
-  id: string;
-  name: string;
+  id: string;   // e.g., 'st-catherine'
+  name: string; // e.g., 'St. Catherine'
 }
 
 export interface Store {
@@ -11,11 +11,11 @@ export interface Store {
   location?: string;
 }
 
-// THE NEW STANDARD: Price is no longer just a number!
+// THE NEW STANDARD: This is the object causing the crashes
 export interface PriceData {
-  val: number;
-  gct: string;
-  branch: string;
+  val: number;    // Numeric price
+  gct: string;    // e.g., '+gct'
+  branch: string; // e.g., 'Mega Mart (Portmore)'
 }
 
 export interface Product {
@@ -25,7 +25,7 @@ export interface Product {
   image_url: string;
   unit: string;
   tags: string[];
-  // Prices are strictly objects now
+  // Prices MUST be objects for the app to work now
   prices: Record<string, PriceData>; 
 }
 
