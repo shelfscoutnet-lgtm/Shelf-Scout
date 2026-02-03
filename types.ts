@@ -11,10 +11,11 @@ export interface Store {
   location?: string;
 }
 
+// THE CONTRACT: Price is an object.
 export interface PriceData {
-  val: number;    // The actual price
-  gct: string;    // '+gct' or empty
-  branch: string; // 'Mega Mart (Portmore)'
+  val: number;
+  gct: string;
+  branch: string;
 }
 
 export interface Product {
@@ -24,11 +25,16 @@ export interface Product {
   image_url: string;
   unit: string;
   tags: string[];
-  // Prices are objects: { val, gct, branch }
+  // Prices is a dictionary of StoreID -> PriceData
   prices: Record<string, PriceData>; 
 }
 
 export interface CartItem extends Product {
   quantity: number;
   selectedStoreId?: string;
+}
+
+export interface PriceAlert {
+  productId: string;
+  targetPrice: number;
 }
