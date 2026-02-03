@@ -14,32 +14,25 @@ export const useProducts = (category?: string | null) => {
       try {
         setLoading(true);
         
-        // 1. METICULOUS QUERY: Joins products, prices, and stores
+        // 1. Fetch raw data from Supabase
         let query = supabase.from('products').select(`
           *,
           prices (
-            store_id,
-            price,
-            gct_tag,
-            stores!inner (
-              name,
-              parish,
-              city
-            )
+            store_id, price, gct_tag,
+            stores!inner ( name, parish, city )
           )
         `);
 
-        // Filter by Parish ID (e.g., 'st-catherine')
+        // 2. Apply Filters
         if (currentParish?.id) {
           query = query.eq('prices.stores.parish', currentParish.id);
         }
         
-        // Filter by City (e.g., 'Portmore')
         if (selectedLocation && selectedLocation !== 'All') {
           query = query.eq('prices.stores.city', selectedLocation);
         }
 
-        if (category && category !== 'All' && category !== null) {
+        if (category && category !== 'All') {
           query = query.ilike('category', `%${category}%`);
         }
 
@@ -47,7 +40,7 @@ export const useProducts = (category?: string | null) => {
         if (error) throw error;
 
         if (data) {
-          // 2. METICULOUS MAPPING: Transform DB rows into PriceData objects
+          // 3. Transform data to match types.ts
           const mapped: Product[] = data.map((item: any) => {
             const priceMap: Record<string, PriceData> = {};
             
@@ -77,7 +70,7 @@ export const useProducts = (category?: string | null) => {
           setProducts(mapped);
         }
       } catch (err) {
-        console.error('Scout Error:', err);
+        console.error('Fetch Error:', err);
       } finally {
         setLoading(false);
       }
