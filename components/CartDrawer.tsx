@@ -11,6 +11,7 @@ export const CartDrawer: React.FC = () => {
   const [viewMode, setViewMode] = useState<'cart' | 'checklist'>('cart');
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
+  // Use the safe context calculator
   const total = getCartTotal(primaryStore?.id);
 
   // --- CALCULATIONS ---
@@ -18,7 +19,7 @@ export const CartDrawer: React.FC = () => {
     let best = 0;
     let worst = 0;
     cart.forEach(item => {
-      // FIX: Map objects to numbers using .val
+      // FIX: Map objects to numbers using .val to prevent NaN crash
       const prices = Object.values(item.prices).map(p => p.val);
       if (prices.length > 0) {
         best += Math.min(...prices) * item.quantity;
@@ -53,7 +54,7 @@ export const CartDrawer: React.FC = () => {
     involvedStores.forEach(store => {
         if (!store) return;
         const items = itemsByStore[store.id];
-        // FIX: Extract .val for total calculation
+        // FIX: Extract .val for total calculation here as well
         const storeTotal = items.reduce((sum, item) => sum + (item.prices[store.id]?.val || 0) * item.quantity, 0);
         text += `📍 *${store.name}* (~$${storeTotal.toLocaleString()})\n`;
         items.forEach(item => { text += `   [ ] ${item.quantity}x ${item.name}\n`; });
@@ -91,7 +92,7 @@ export const CartDrawer: React.FC = () => {
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-8">
                         {cart.map(item => {
                             const itemStoreId = item.selectedStoreId || primaryStore?.id || 'default';
-                            // FIX: Safely access .val
+                            // FIX: Safely access .val for display
                             const priceData = item.prices[itemStoreId];
                             const unitPrice = priceData?.val || 0;
                             const totalItemPrice = unitPrice * item.quantity;
@@ -125,7 +126,7 @@ export const CartDrawer: React.FC = () => {
                         {involvedStores.map(store => {
                             if (!store) return null;
                             const items = itemsByStore[store.id];
-                            // FIX: Extract .val
+                            // FIX: Extract .val for store total
                             const storeTotal = items.reduce((sum, item) => sum + ((item.prices[store.id]?.val || 0) * item.quantity), 0);
                             
                             return (
