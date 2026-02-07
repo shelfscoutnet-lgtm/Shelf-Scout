@@ -18,7 +18,7 @@ interface Props {
 }
 
 export const ChatBot: React.FC<Props> = ({ availableProducts = [] }) => {
-  const { currentParish, cart, stores, userCoords } = useShop();
+  const { currentRegion, cart, stores, userCoords } = useShop();
   const { isDarkMode } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -45,8 +45,13 @@ export const ChatBot: React.FC<Props> = ({ availableProducts = [] }) => {
     setIsLoading(true);
 
     try {
-      // Fix: Strictly use process.env.API_KEY as per hard requirements
-      const ai = new GoogleGenAI({ apiKey: "AIzaSyC4Ldp2s0uXucxZgUMEHSgD-vuy8EHkSXM" });
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        setMessages(prev => [...prev, { role: 'model', text: "Gemini API key is missing. Please configure VITE_GEMINI_API_KEY." }]);
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       
       // Create a lightweight context of products to send to the model from REAL Data
       // Fix: Added explicit casting for prices and a non-mutating sort to resolve arithmetic operation type errors
@@ -74,15 +79,15 @@ export const ChatBot: React.FC<Props> = ({ availableProducts = [] }) => {
         };
       }).slice(0, 100)); // Increased context to 100 items
 
-      const systemInstruction = `You are the Shelf Scout AI Assistant for ${currentParish?.name || 'Jamaica'}.
+      const systemInstruction = `You are the Shelf Scout AI Assistant for ${currentRegion?.name || 'the Caribbean'}.
       
-      Current Available Products in ${currentParish?.name || 'this area'}:
+      Current Available Products in ${currentRegion?.name || 'this area'}:
       ${productContext}
 
       Core Rules:
       1. Scan the product list for the item the user mentions.
       2. If you find a match: Say exactly "I found [Product Name] for $[Price] at [Store Name]." (Use the best/lowest price).
-      3. If you do NOT find a matching item in the list: Say exactly "I don't see that item in the current ${currentParish?.name || 'Kingston & St. Andrew'} list."
+      3. If you do NOT find a matching item in the list: Say exactly "I don't see that item in the current ${currentRegion?.name || 'local'} list."
       4. Never make up prices or stores. Only use the provided product list.
       5. If the user asks about multiple items, provide the best deal for each.
       6. For location or store queries, use the googleMaps tool.`;

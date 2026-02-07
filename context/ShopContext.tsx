@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Parish, Product, CartItem, Store } from '../types';
-import { useParishLocator } from '../hooks/useParishLocator';
+import { Region, Product, CartItem, Store } from '../types';
+import { useRegionLocator } from '../hooks/useRegionLocator';
 import { useStores } from '../hooks/useStores';
 
 interface ShopContextType {
-  currentParish: Parish | null;
-  setCurrentParish: (parish: Parish) => void;
-  resetParish: () => void;
+  currentRegion: Region | null;
+  setCurrentRegion: (region: Region) => void;
+  resetRegion: () => void;
   isLoading: boolean; // Unified loading state
+  isLoadingLocation: boolean;
+  manualOverride: (regionId: string) => void;
   
   stores: Store[]; 
   locations: string[]; 
@@ -15,6 +17,7 @@ interface ShopContextType {
   setSelectedLocation: (loc: string) => void;
   
   cart: CartItem[];
+  cartItemCount: number;
   getCartTotal: (storeId?: string) => number;
   addToCart: (product: Product, storeId?: string) => void;
 }
@@ -22,18 +25,18 @@ interface ShopContextType {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { detectedParish, loading: locLoading, manualOverride } = useParishLocator();
-  const [currentParish, setCurrentParish] = useState<Parish | null>(null);
+  const { detectedRegion, loading: locLoading, manualOverride } = useRegionLocator();
+  const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // 1. Meticulous Store Fetching: Use standardized Parish ID (e.g., 'st-catherine')
-  const { stores = [], loading: storesLoading } = useStores(currentParish?.id) || {};
+  // 1. Meticulous Store Fetching: Use standardized Region ID (e.g., 'jm-03')
+  const { stores = [], loading: storesLoading } = useStores(currentRegion?.id) || {};
 
-  // 2. Lifecycle: Sync detected parish to local state
+  // 2. Lifecycle: Sync detected region to local state
   useEffect(() => {
-    if (detectedParish) setCurrentParish(detectedParish);
-  }, [detectedParish]);
+    if (detectedRegion) setCurrentRegion(detectedRegion);
+  }, [detectedRegion]);
 
   // 3. Meticulous City Extraction: Derived from verified store data
   const locations = useMemo(() => {
@@ -65,16 +68,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const value = {
-    currentParish,
-    setCurrentParish,
-    resetParish: () => { setCurrentParish(null); setSelectedLocation('All'); },
+    currentRegion,
+    setCurrentRegion,
+    resetRegion: () => { setCurrentRegion(null); setSelectedLocation('All'); },
     isLoading: locLoading || storesLoading,
+    isLoadingLocation: locLoading || storesLoading,
     manualOverride,
     stores,
     locations,
     selectedLocation,
     setSelectedLocation,
     cart,
+    cartItemCount: cart.reduce((sum, item) => sum + item.quantity, 0),
     getCartTotal,
     addToCart
   };

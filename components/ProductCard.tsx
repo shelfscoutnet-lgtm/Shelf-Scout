@@ -10,13 +10,13 @@ interface Props {
 }
 
 export const ProductCard: React.FC<Props> = ({ product, onClick }) => {
-  const { addToCart, stores, currentParish } = useShop();
+  const { addToCart } = useShop();
   const { isDarkMode } = useTheme();
 
   // --- PRECISION DATA LOGIC ---
   
   const { localPrice, hasLocalPrice, gctTag, branchName } = useMemo(() => {
-    // 1. Get all available package data for this parish
+    // 1. Get all available package data for this region
     const localData = Object.values(product.prices || {}) as any[];
     
     if (localData.length === 0) {

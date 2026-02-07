@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Store } from '../types';
 
-export const useStores = (parishId?: string) => {
+export const useStores = (regionId?: string) => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -10,7 +10,7 @@ export const useStores = (parishId?: string) => {
   useEffect(() => {
     const fetchStores = async () => {
       // METICULOUS GUARD: Uses standardized ID (st-catherine) to prevent "No Data" bug
-      if (!parishId) {
+      if (!regionId) {
         setStores([]);
         return;
       }
@@ -21,7 +21,25 @@ export const useStores = (parishId?: string) => {
         const { data, error: supabaseError } = await supabase
           .from('stores')
           .select('*')
-          .eq('parish', parishId); 
+          .eq('region_id', regionId); 
+
+        if (supabaseError && supabaseError.message.includes('region_id')) {
+          const fallback = await supabase
+            .from('stores')
+            .select('*')
+            .eq('parish', regionId);
+
+          if (fallback.error) throw fallback.error;
+          const mappedStores: Store[] = (fallback.data || []).map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            region_id: s.parish,
+            city: s.city || 'Unknown',
+            location: s.location || ''
+          }));
+          setStores(mappedStores);
+          return;
+        }
 
         if (supabaseError) throw supabaseError;
 
@@ -29,7 +47,7 @@ export const useStores = (parishId?: string) => {
         const mappedStores: Store[] = (data || []).map((s: any) => ({
           id: s.id,
           name: s.name,
-          parish: s.parish,
+          region_id: s.region_id,
           city: s.city || 'Unknown',
           location: s.location || ''
         }));
@@ -44,7 +62,7 @@ export const useStores = (parishId?: string) => {
     };
 
     fetchStores();
-  }, [parishId]);
+  }, [regionId]);
 
   return { stores, loading, error };
 };

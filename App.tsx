@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { ShopProvider } from './context/ShopContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { ParishGuard } from './components/ParishGuard';
+import { RegionGuard } from './components/RegionGuard';
 import { BetaBanner } from './components/BetaBanner';
 import { LandingPage } from './components/LandingPage';
 import { ReviewOrder } from './components/ReviewOrder'; // Import Meticulous Component
@@ -62,7 +62,7 @@ const App: React.FC = () => {
               <BetaBanner />
               
               <main className="flex-1 pb-32"> {/* Added padding for the ReviewOrder bar */}
-                <ParishGuard />
+                <RegionGuard />
               </main>
 
               {/* METICULOUS PLACEMENT: ReviewOrder is inside ShopProvider 

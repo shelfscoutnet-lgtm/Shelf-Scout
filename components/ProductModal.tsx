@@ -34,7 +34,7 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
 };
 
 export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
-  const { currentParish, addToCart, addPriceAlert, removePriceAlert, priceAlerts, userCoords, stores } = useShop();
+  const { currentRegion, addToCart, addPriceAlert, removePriceAlert, priceAlerts, userCoords, stores } = useShop();
   const { isDarkMode } = useTheme();
   
   // Local state
@@ -48,10 +48,10 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
 
   // เตรียม Store Data
   const storeData = useMemo(() => {
-    if (!currentParish) return [];
-
-    const refLat = userCoords?.lat || currentParish.coords.lat;
-    const refLng = userCoords?.lng || currentParish.coords.lng;
+    if (!currentRegion) return [];
+    
+    const refLat = userCoords?.lat || currentRegion.coords.lat;
+    const refLng = userCoords?.lng || currentRegion.coords.lng;
 
     return stores
         .map(store => {
@@ -62,7 +62,7 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
             return { ...store, price, dist };
         })
         .filter(s => s.price !== undefined);
-  }, [currentParish, product.prices, userCoords, stores]);
+  }, [currentRegion, product.prices, userCoords, stores]);
 
   // Calculate Best Price globally
   const bestPrice = useMemo(() => {
@@ -87,10 +87,10 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
       }
   }, [sortedStores, selectedStoreId]);
 
-  if (!currentParish) return null;
+  if (!currentRegion) return null;
 
   // Badge Logic: Simulated only for Kingston & St. Andrew
-  const isSimulated = IS_BETA_MODE && currentParish?.id === 'jm-ksa';
+  const isSimulated = IS_BETA_MODE && currentRegion?.id === 'jm-ksa';
 
   const handleSetAlert = () => {
       const price = parseFloat(alertPrice);
@@ -293,7 +293,7 @@ export const ProductModal: React.FC<Props> = ({ product, onClose }) => {
             
             {sortedStores.length === 0 && (
                 <div className="p-4 text-center opacity-50 text-sm">
-                    No pricing available in this parish yet.
+                    No pricing available in this region yet.
                 </div>
             )}
           </div>

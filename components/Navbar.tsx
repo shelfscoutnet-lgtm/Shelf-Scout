@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, ShoppingBag, Utensils } from 'lucide-react';
+import { Home, Search, ShoppingBag, Utensils, Shield } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -11,6 +11,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const { cartItemCount } = useShop();
   const { isDarkMode } = useTheme();
+  const adminEnabled = import.meta.env.VITE_ADMIN_MODE === 'true';
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 h-16 border-t flex items-center justify-around z-50 transition-colors ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -54,6 +55,16 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
         <Utensils size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
         <span className="text-[10px] font-medium mt-1">Recipes</span>
       </button>
+
+      {adminEnabled && (
+        <button 
+          onClick={() => setActiveTab('admin')} 
+          className={`flex flex-col items-center justify-center w-16 ${activeTab === 'admin' ? 'text-emerald-500' : (isDarkMode ? 'text-slate-500' : 'text-slate-400')}`}
+        >
+          <Shield size={24} strokeWidth={activeTab === 'admin' ? 2.5 : 2} />
+          <span className="text-[10px] font-medium mt-1">Admin</span>
+        </button>
+      )}
 
     </div>
   );

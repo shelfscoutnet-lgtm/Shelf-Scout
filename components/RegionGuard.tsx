@@ -1,12 +1,12 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
-import { ActiveDashboard } from './ActiveDashboard';
+import { ActiveDashboard } from '../pages/ActiveDashboard';
 import { VelvetRopeWaitlist } from './VelvetRopeWaitlist';
-import { ParishSelectionScreen } from './ParishSelectionScreen';
+import { RegionSelectionScreen } from './RegionSelectionScreen';
 import { Loader2 } from 'lucide-react';
 
-export const ParishGuard: React.FC = () => {
-  const { currentParish, isLoadingLocation } = useShop();
+export const RegionGuard: React.FC = () => {
+  const { currentRegion, isLoadingLocation } = useShop();
 
   if (isLoadingLocation) {
     return (
@@ -17,16 +17,16 @@ export const ParishGuard: React.FC = () => {
     );
   }
 
-  // If no parish is selected (Back button pressed or initial load if no default)
-  if (!currentParish) {
-    return <ParishSelectionScreen />;
+  // If no region is selected (Back button pressed or initial load if no default)
+  if (!currentRegion) {
+    return <RegionSelectionScreen />;
   }
 
   // The Split-Reality Logic
-  if (currentParish.tier === 'active') {
+  if (currentRegion.tier === 'active') {
     return <ActiveDashboard />;
-  } else {
-    // Sensing, Beta, or Dormant
-    return <VelvetRopeWaitlist parish={currentParish} />;
   }
+
+  // Sensing, Beta, or Dormant
+  return <VelvetRopeWaitlist region={currentRegion} />;
 };
