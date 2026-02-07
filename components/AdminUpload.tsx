@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useShop } from '../context/ShopContext';
 import { useProducts } from '../hooks/useProducts';
 import { useTheme } from '../context/ThemeContext';
+import { useAdminAccess } from '../hooks/useAdminAccess';
 
 interface AdminUploadProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ export const AdminUpload: React.FC<AdminUploadProps> = ({ onBack }) => {
   const { isDarkMode } = useTheme();
   const { stores } = useShop();
   const { products } = useProducts();
+  const { isAdmin, loading: authLoading, error: authError } = useAdminAccess();
   
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -133,6 +135,25 @@ export const AdminUpload: React.FC<AdminUploadProps> = ({ onBack }) => {
         }
     });
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center p-10">
+        <Loader2 className="animate-spin text-emerald-500" size={24} />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-teal-900 border-teal-800 text-teal-200' : 'bg-white border-slate-200 text-slate-600'}`}>
+        <p className="font-semibold mb-2">Admin access required</p>
+        <p className="text-sm">
+          {authError ? authError : 'Sign in with an approved admin email to upload pricing.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen p-4 ${isDarkMode ? 'bg-teal-950 text-white' : 'bg-slate-50 text-slate-900'}`}>

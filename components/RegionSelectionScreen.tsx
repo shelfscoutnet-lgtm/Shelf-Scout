@@ -1,12 +1,13 @@
 import React from 'react';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { PARISHES } from '../constants';
+import { useRegions } from '../hooks/useRegions';
 import { useTheme } from '../context/ThemeContext';
 
-export const ParishSelectionScreen: React.FC = () => {
-  const { setCurrentParish } = useShop();
-  const { isDarkMode, toggleTheme } = useTheme();
+export const RegionSelectionScreen: React.FC = () => {
+  const { setCurrentRegion } = useShop();
+  const { regions } = useRegions();
+  const { isDarkMode } = useTheme();
 
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-teal-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
@@ -14,29 +15,29 @@ export const ParishSelectionScreen: React.FC = () => {
         <div className="text-center mb-10 flex flex-col items-center">
           <div className="flex items-center gap-3 mb-2">
             <img 
-                src="https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Brand%20logo/shelf-scout-logo.png" 
-                alt="Shelf Scout Logo" 
-                className="h-12 w-auto"
+              src="https://zwulphqqstyywybeyleu.supabase.co/storage/v1/object/public/Brand%20logo/shelf-scout-logo.png" 
+              alt="Shelf Scout Logo" 
+              className="h-12 w-auto"
             />
             <h1 className={`text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               Shelf<span className="text-emerald-500">Scout</span>
             </h1>
           </div>
           <p className={`${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}>
-            Compare grocery prices across Jamaica.
+            Compare grocery prices across the Caribbean.
           </p>
         </div>
 
         <div className={`bg-white rounded-2xl shadow-xl p-6 border ${isDarkMode ? 'bg-teal-900 border-teal-800' : 'bg-white border-slate-100'}`}>
           <label className={`block text-xs font-bold uppercase mb-3 tracking-wider ${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
-            Select Your Parish
+            Select Your Region
           </label>
           
           <div className="space-y-2 max-h-[60vh] overflow-y-auto hide-scrollbar">
-            {PARISHES.map(parish => (
+            {regions.map(region => (
               <button
-                key={parish.id}
-                onClick={() => setCurrentParish(parish)}
+                key={region.id}
+                onClick={() => setCurrentRegion(region)}
                 className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 group ${
                   isDarkMode 
                     ? 'bg-teal-950 border-teal-800 hover:border-emerald-500 hover:bg-emerald-900/20' 
@@ -51,10 +52,10 @@ export const ParishSelectionScreen: React.FC = () => {
                   </div>
                   <div className="text-left">
                     <div className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        {parish.name}
+                      {region.name}
                     </div>
-                    {parish.tier !== 'active' && (
-                        <div className="text-[10px] text-emerald-500 font-medium">Coming Soon</div>
+                    {region.tier !== 'active' && (
+                      <div className="text-[10px] text-emerald-500 font-medium">Coming Soon</div>
                     )}
                   </div>
                 </div>
@@ -65,7 +66,7 @@ export const ParishSelectionScreen: React.FC = () => {
         </div>
         
         <p className="text-center text-xs text-slate-400 mt-8">
-            Select a location to see local prices and availability.
+          Select a region to see local prices and availability.
         </p>
       </div>
     </div>

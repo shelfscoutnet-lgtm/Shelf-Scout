@@ -7,7 +7,7 @@ export const useProducts = (category?: string | null) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const { currentParish, selectedLocation } = useShop();
+  const { currentRegion, selectedLocation } = useShop();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -15,17 +15,19 @@ export const useProducts = (category?: string | null) => {
         setLoading(true);
         
         // 1. Fetch raw data from Supabase
-        let query = supabase.from('products').select(`
+        const baseQuery = () => supabase.from('products').select(`
           *,
           prices (
             store_id, price, gct_tag,
-            stores!inner ( name, parish, city )
+            stores!inner ( name, region_id, parish, city )
           )
         `);
 
         // 2. Apply Filters
-        if (currentParish?.id) {
-          query = query.eq('prices.stores.parish', currentParish.id);
+        let query = baseQuery();
+
+        if (currentRegion?.id) {
+          query = query.eq('prices.stores.region_id', currentRegion.id);
         }
         
         if (selectedLocation && selectedLocation !== 'All') {
@@ -36,7 +38,23 @@ export const useProducts = (category?: string | null) => {
           query = query.ilike('category', `%${category}%`);
         }
 
-        const { data, error } = await query;
+        let { data, error } = await query;
+
+        if (error && error.message.includes('region_id')) {
+          let fallbackQuery = baseQuery();
+          if (currentRegion?.id) {
+            fallbackQuery = fallbackQuery.eq('prices.stores.parish', currentRegion.id);
+          }
+          if (selectedLocation && selectedLocation !== 'All') {
+            fallbackQuery = fallbackQuery.eq('prices.stores.city', selectedLocation);
+          }
+          if (category && category !== 'All') {
+            fallbackQuery = fallbackQuery.ilike('category', `%${category}%`);
+          }
+          const fallback = await fallbackQuery;
+          data = fallback.data;
+          error = fallback.error;
+        }
         if (error) throw error;
 
         if (data) {
@@ -77,7 +95,7 @@ export const useProducts = (category?: string | null) => {
     };
 
     fetchProducts();
-  }, [category, currentParish?.id, selectedLocation]);
+  }, [category, currentRegion?.id, selectedLocation]);
 
   return { products, loading };
 };

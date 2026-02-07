@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { ArrowRight, CheckCircle2, MapPin, ChevronLeft, Phone, Mail, User, ArrowLeft, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Parish } from '../types';
+import { Region } from '../types';
 import { useSignups } from '../hooks/useSignups';
 import { useShop } from '../context/ShopContext';
 import { useTheme } from '../context/ThemeContext';
 
 interface Props {
-  parish: Parish;
+  region: Region;
 }
 
-export const VelvetRopeWaitlist: React.FC<Props> = ({ parish }) => {
-  const { submitSignup, loading, signupCount } = useSignups();
-  const { resetParish } = useShop();
+export const VelvetRopeWaitlist: React.FC<Props> = ({ region }) => {
+  const { submitSignup, loading, signupCount } = useSignups(region.id);
+  const { resetRegion } = useShop();
   const { isDarkMode } = useTheme();
   
   const [name, setName] = useState('');
@@ -44,7 +44,7 @@ export const VelvetRopeWaitlist: React.FC<Props> = ({ parish }) => {
         name,
         email,
         phone,
-        parish_id: parish.id
+        region_id: region.id
     });
 
     if (result.success) {
@@ -69,10 +69,10 @@ export const VelvetRopeWaitlist: React.FC<Props> = ({ parish }) => {
         {/* Back Button */}
         <div className="w-full max-w-md mb-6">
             <button 
-                onClick={resetParish}
+                onClick={resetRegion}
                 className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-teal-400' : 'text-slate-500'}`}
             >
-                <ArrowLeft size={16} className="mr-1" /> Change Parish
+                <ArrowLeft size={16} className="mr-1" /> Change Region
             </button>
         </div>
 
@@ -82,7 +82,7 @@ export const VelvetRopeWaitlist: React.FC<Props> = ({ parish }) => {
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight leading-tight">
                 Shelf Scout in <br />
-                <span className="text-emerald-500">{parish.name}</span>
+                <span className="text-emerald-500">{region.name}</span>
             </h1>
             <p className={`${isDarkMode ? 'text-teal-300' : 'text-slate-500'}`}>
                 We haven't launched full price tracking here yet. Join the waitlist to get early access!
@@ -95,7 +95,7 @@ export const VelvetRopeWaitlist: React.FC<Props> = ({ parish }) => {
                  <div>
                      <h3 className="text-white font-bold text-sm flex items-center">
                          <Zap size={14} className="text-yellow-400 mr-1" fill="currentColor" />
-                         Unlock {parish.name}
+                         Unlock {region.name}
                      </h3>
                      <p className="text-slate-400 text-xs mt-0.5">Help us reach {goalTarget} local scouts!</p>
                  </div>
@@ -181,7 +181,7 @@ export const VelvetRopeWaitlist: React.FC<Props> = ({ parish }) => {
                 </div>
                 <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-emerald-900'}`}>Thanks, {name}!</h3>
                 <p className={`${isDarkMode ? 'text-teal-300' : 'text-emerald-700'}`}>
-                    We'll email you as soon as Shelf Scout goes live in {parish.name}.
+                    We'll email you as soon as Shelf Scout goes live in {region.name}.
                 </p>
             </div>
         )}

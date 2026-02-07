@@ -1,13 +1,26 @@
-export interface Parish {
+export interface Country {
   id: string;
   name: string;
+  code: string;
+  currency: string;
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  slug: string;
+  countryId: string;
+  coords: { lat: number; lng: number };
+  tier: 'active' | 'sensing' | 'dormant';
+  waitlistCount: number;
+  launchReadiness: number;
 }
 
 export interface Store {
   id: string;
   name: string;
-  parish: string;
-  city: string;
+  region_id: string;
+  city?: string;
   location?: string;
 }
 

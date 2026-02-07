@@ -18,22 +18,24 @@ import { ProductModal } from '../components/ProductModal';
 import { ProductCard } from '../components/ProductCard';
 import { ChefCorner } from '../components/ChefCorner';
 import { AdminUpload } from '../components/AdminUpload';
+import { AdminLocations } from '../components/AdminLocations';
 import { Product } from '../types';
 
 export const ActiveDashboard: React.FC = () => {
   const { 
-    currentParish, locations, selectedLocation, 
+    currentRegion, locations, selectedLocation, 
     setSelectedLocation, isLoading: contextLoading 
   } = useShop();
 
   const { isDarkMode, toggleTheme } = useTheme();
   // Using ID for signups to match database standard
-  const { submitSignup } = useSignups(currentParish?.id);
+  const { submitSignup } = useSignups(currentRegion?.id);
   
   const [activeTab, setActiveTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const adminEnabled = import.meta.env.VITE_ADMIN_MODE === 'true';
 
   // Fetch products with the hook
   const { products, loading: productsLoading } = useProducts(selectedCategory);
@@ -78,8 +80,8 @@ export const ActiveDashboard: React.FC = () => {
                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center gap-4 shadow-sm">
                   <MapPin className="text-emerald-500" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-500">Active Parish</p>
-                    <p className="font-bold text-white">{currentParish?.name}</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-500">Active Region</p>
+                    <p className="font-bold text-white">{currentRegion?.name}</p>
                   </div>
                </div>
                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
@@ -91,7 +93,7 @@ export const ActiveDashboard: React.FC = () => {
                       onChange={(e) => setSelectedLocation(e.target.value)}
                       className="bg-transparent font-bold w-full focus:outline-none dark:text-white"
                     >
-                      <option value="All">All {currentParish?.name}</option>
+                      <option value="All">All {currentRegion?.name}</option>
                       {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                     </select>
                   </div>
@@ -107,6 +109,13 @@ export const ActiveDashboard: React.FC = () => {
                     <ProductCard key={p.id} product={p} onClick={() => setSelectedProduct(p)} />
                 ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'admin' && adminEnabled && (
+          <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto space-y-6">
+            <AdminLocations />
+            <AdminUpload onBack={() => setActiveTab('home')} />
           </div>
         )}
       </div>
