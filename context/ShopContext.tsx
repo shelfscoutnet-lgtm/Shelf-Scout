@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useMemo, useEffect } from '
 import { Parish, Store, Product, CartItem, PriceAlert } from '../types';
 import { useParishLocator } from '../hooks/useParishLocator';
 import { useStores } from '../hooks/useStores';
- 
+
 interface ShopContextType {
   currentParish: Parish | null;
   setCurrentParish: (parish: Parish) => void;
