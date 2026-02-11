@@ -1,50 +1,43 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import { Store } from '../types';
+// Updated useStores.ts for proper coordinates mapping
 
-export const useStores = (parishId?: string) => {
-  const [stores, setStores] = useState<Store[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+import { useEffect, useState } from 'react';
+import { fetchStores } from '../api';
 
-  useEffect(() => {
-    const fetchStores = async () => {
-      // METICULOUS GUARD: Uses standardized ID (st-catherine) to prevent "No Data" bug
-      if (!parishId) {
-        setStores([]);
-        return;
-      }
+const useStores = () => {
+    const [stores, setStores] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-      try {
-        setLoading(true);
-        // Fetching clean data columns to support Portmore Precision identification
-        const { data, error: supabaseError } = await supabase
-          .from('stores')
-          .select('*')
-          .eq('parish', parishId); 
+    useEffect(() => {
+        const getStores = async () => {
+            try {
+                const data = await fetchStores();
+                const mappedStores = data.map(store => {
+                    // Safety check for latitude and longitude
+                    if (store.latitude && store.longitude) {
+                        return {
+                            ...store,
+                            coords: {
+                                lat: parseFloat(store.latitude),
+                                lng: parseFloat(store.longitude)
+                            }
+                        };
+                    } else {
+                        return null; // Or handle it in other ways as per your requirements
+                    }
+                }).filter(store => store !== null);
 
-        if (supabaseError) throw supabaseError;
+                setStores(mappedStores);
+            } catch (error) {
+                console.error('Error fetching stores:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        // MAP: Transfers database rows to our clean TypeScript objects
-        const mappedStores: Store[] = (data || []).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          parish: s.parish,
-          city: s.city || 'Unknown',
-          location: s.location || ''
-        }));
+        getStores();
+    }, []);
 
-        setStores(mappedStores);
-      } catch (err: any) {
-        console.warn('Store Fetch Failed:', err.message);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStores();
-  }, [parishId]);
-
-  return { stores, loading, error };
+    return { stores, loading };
 };
+
+export default useStores;
